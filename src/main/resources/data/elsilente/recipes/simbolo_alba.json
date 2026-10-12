@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    " O ",
+    " S "
+  ],
+  "key": {
+    "C": { "item": "elsilente:corazon_silente" },
+    "O": { "item": "minecraft:obsidian" },
+    "S": { "item": "minecraft:stick" }
+  },
+  "result": {
+    "item": "elsilente:simbolo_alba",
+    "count": 1
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "silente.heartbeat": {
+    "category": "hostile",
+    "sounds": [ { "name": "elsilente:heartbeat", "stream": false } ]
+  },
+  "silente.whisper": {
+    "category": "hostile",
+    "sounds": [ { "name": "elsilente:whisper", "stream": false } ]
+  },
+  "silente.scream": {
+    "category": "hostile",
+    "sounds": [ { "name": "elsilente:scream", "stream": false } ]
+  },
+  "silente.vanish": {
+    "category": "hostile",
+    "sounds": [ { "name": "elsilente:vanish", "stream": false } ]
+  },
+  "silente.attack": {
+    "category": "hostile",
+    "sounds": [ { "name": "elsilente:attack", "stream": false } ]
+  },
+  "silente.chase": {
+    "category": "hostile",
+    "sounds": [ { "name": "elsilente:chase", "stream": false } ]
+  },
+  "silente.nightmare": {
+    "category": "hostile",
+    "sounds": [ { "name": "elsilente:nightmare", "stream": false } ]
+  },
+  "silente.shadow_idle": {
+    "category": "neutral",
+    "sounds": [ { "name": "elsilente:shadow_idle", "stream": false } ]
+  },
+  "silente.umbral_roar": {
+    "category": "hostile",
+    "sounds": [ { "name": "elsilente:umbral_roar", "stream": false } ]
+  },
+  "silente.umbral_summon": {
+    "category": "hostile",
+    "sounds": [ { "name": "elsilente:umbral_summon", "stream": false } ]
+  }
+}

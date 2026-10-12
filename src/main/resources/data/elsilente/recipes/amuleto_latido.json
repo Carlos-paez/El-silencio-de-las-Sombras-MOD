@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " S ",
+    "GHG",
+    " G "
+  ],
+  "key": {
+    "S": { "item": "minecraft:string" },
+    "G": { "item": "minecraft:gold_ingot" },
+    "H": { "item": "elsilente:corazon_silente" }
+  },
+  "result": {
+    "item": "elsilente:amuleto_latido",
+    "count": 1
+  }
+}

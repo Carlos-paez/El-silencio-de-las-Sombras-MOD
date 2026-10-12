@@ -1,0 +1,20 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "elsilente:block/trofeo_umbral"
+  },
+  "elements": [
+    {
+      "from": [ 3, 0, 3 ],
+      "to": [ 13, 13, 13 ],
+      "faces": {
+        "down":  { "texture": "#all", "cullface": "down" },
+        "up":    { "texture": "#all" },
+        "north": { "texture": "#all" },
+        "south": { "texture": "#all" },
+        "west":  { "texture": "#all" },
+        "east":  { "texture": "#all" }
+      }
+    }
+  ]
+}
