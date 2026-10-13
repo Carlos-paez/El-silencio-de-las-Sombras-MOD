@@ -1,6 +1,7 @@
 package com.elsilente.event;
 
 import com.elsilente.ElSilenteMod;
+import com.elsilente.config.ElSilenteConfig;
 import com.elsilente.entity.ElSilenteEntity;
 import com.elsilente.util.Spawns;
 import net.minecraft.ChatFormatting;
@@ -13,11 +14,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Cuando El Silente mata a un jugador, le roba UN objeto (con peso x3 para
@@ -25,6 +30,32 @@ import java.util.List;
  */
 @Mod.EventBusSubscriber(modid = ElSilenteMod.MODID)
 public class TheftHandler {
+
+    /**
+     * Cofres del Silente sin abrir por jugador (posiciones). El Amuleto del
+     * Latido late hacia el botin robado mientras este mapa tenga una entrada
+     * valida (se limpia al abrir el cofre). Es estado de sesion: tras un
+     * reinicio el rastro se pierde pero el cofre sigue llamandose
+     * "Cofre del Silente".
+     */
+    private static final Map<UUID, BlockPos> STOLEN_CHESTS = new HashMap<>();
+
+    /** Posicion del Cofre del Silente del jugador, o null si no hay botin pendiente. */
+    public static BlockPos getStolenChest(UUID playerId) {
+        return STOLEN_CHESTS.get(playerId);
+    }
+
+    /** Al abrir el cofre se recupera el botin y se corta el rastro. */
+    @SubscribeEvent
+    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getEntity().level().isClientSide) {
+            return;
+        }
+        BlockPos stored = STOLEN_CHESTS.get(event.getEntity().getUUID());
+        if (stored != null && stored.equals(event.getPos())) {
+            STOLEN_CHESTS.remove(event.getEntity().getUUID());
+        }
+    }
 
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
@@ -35,6 +66,9 @@ public class TheftHandler {
             return;
         }
         if (!(event.getSource().getEntity() instanceof ElSilenteEntity)) {
+            return;
+        }
+        if (!ElSilenteConfig.COMMON.theftEnabled.get()) {
             return;
         }
 
@@ -83,7 +117,11 @@ public class TheftHandler {
             chest.setChanged();
         }
 
+        STOLEN_CHESTS.put(player.getUUID(), spot);
+
         player.sendSystemMessage(Component.literal("Algo ha sido tomado de ti...")
+                .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+        player.sendSystemMessage(Component.literal("El Amuleto del Latido latira hacia lo robado.")
                 .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
     }
 

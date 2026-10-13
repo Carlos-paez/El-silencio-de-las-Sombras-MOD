@@ -7,7 +7,10 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.ResourceLocation;
 
-/** Renderer de la Sombra Debil: menuda (0,9x) y con sombra corta. */
+/**
+ * Renderer de la Sombra Debil: skin estandar 64x64 (cuerpo + overlay de bruma),
+ * ligeramente menuda (0,9x) y con sombra corta.
+ */
 public class SombraDebilRenderer extends MobRenderer<SombraDebilEntity, SombraDebilModel> {
 
     private static final ResourceLocation TEXTURE =

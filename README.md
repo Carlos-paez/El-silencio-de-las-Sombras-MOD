@@ -94,6 +94,39 @@ Si El Silente mata al jugador:
 1. Extrae un objeto aleatorio de alto valor (con preferencia x3 a armas, herramientas o armadura).
 2. Genera un cofre oculto en un radio de 20–40 bloques bautizado como *"Cofre del Silente"* con el item dentro.
 3. Envía el mensaje siniestro al jugador: *"Algo ha sido tomado de ti..."*.
+4. **Rastro del botín**: mientras el botín esté sin recuperar, el **Amuleto del Latido** late también hacia el Cofre del Silente (latido grave, cuanto más cerca más rápido). Al abrir el cofre el rastro desaparece.
+
+---
+
+## 🌫️ Presencia acumulativa (`PresenceHandler`)
+
+Un medidor invisible (0–100, sincronizado al cliente) mide cuánto te ha notado el mundo de las sombras:
+
+- **Sube** con emboscadas (+20), pesadillas al despertar (+20) y noches a oscuras (+2 cada 10 s).
+- **Baja** con la luz (−2 cada 10 s) y durmiendo sin incidentes (−10).
+- **Efectos**: con presencia alta la niebla se espesa (hasta 40 %), aparecen **alucinaciones** (susurros y humo falsos detrás del jugador, solo visuales) y los bordes de la pantalla se oscurecen (vignette). La probabilidad de emboscada sube hasta +50 %.
+
+---
+
+## ⚙️ Configuración (`config/elsilente-common.toml`)
+
+Todo lo ajustable se genera con Forge en `config/elsilente-common.toml`:
+
+| Clave | Default | Efecto |
+|---|---|---|
+| `general.ambushEnabled` | `true` | Activa las emboscadas. |
+| `general.ambushChance` | `0.20` | Probabilidad por comprobación. |
+| `general.ambushCooldownTicks` | `12000` | Enfriamiento entre emboscadas. |
+| `general.theftEnabled` | `true` | Activa el robo de botín. |
+| `general.snuffLightsEnabled` | `true` | El Silente apaga las luces cercanas en STALK. |
+| `spawns.maxShadowsPerPlayer` | `6` | Cupo de Sombras Débiles por jugador. |
+| `presence.enabled` | `true` | Sistema de presencia acumulativa. |
+
+---
+
+## 🕯️ Luces apagadas (`SnuffLightGoal`)
+
+En fase STALK, si no le estás mirando, El Silente se desplaza hasta una **antorcha, linterna, vela u hoguera** cercana (≤ 12 b) y la extingue con un soplido de humo antes de continuar el acecho. Tu base deja de ser un refugio seguro: hay que mantener las luces y vigilar las sombras.
 
 ---
 

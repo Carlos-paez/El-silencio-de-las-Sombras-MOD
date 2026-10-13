@@ -4,6 +4,7 @@ import com.elsilente.ElSilenteMod;
 import com.elsilente.entity.ElSilenteEntity;
 import com.elsilente.registry.ModItems;
 import com.elsilente.registry.ModSounds;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class AmuletHandler {
 
     private static final Map<UUID, Integer> TIMERS = new HashMap<>();
+    private static final Map<UUID, Integer> TRAIL_TIMERS = new HashMap<>();
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
@@ -81,6 +83,45 @@ public class AmuletHandler {
         level.playSound(null, nearest.blockPosition(), ModSounds.HEARTBEAT.get(),
                 SoundSource.HOSTILE, volume, pitch);
         TIMERS.put(player.getUUID(), interval);
+
+        trailHeartbeat(player);
+    }
+
+    /**
+     * Segundo latido, grave y lento, en la direccion del Cofre del Silente
+     * pendiente (rastro del botin de TheftHandler). Mas cuanto mas cerca.
+     */
+    private static void trailHeartbeat(Player player) {
+        BlockPos chest = TheftHandler.getStolenChest(player.getUUID());
+        if (chest == null || !player.level().isLoaded(chest)) {
+            TRAIL_TIMERS.remove(player.getUUID());
+            return;
+        }
+        int timer = TRAIL_TIMERS.getOrDefault(player.getUUID(), 1);
+        if (--timer > 0) {
+            TRAIL_TIMERS.put(player.getUUID(), timer);
+            return;
+        }
+
+        double dist = Math.sqrt(player.distanceToSqr(chest.getX() + 0.5D, chest.getY() + 0.5D,
+                chest.getZ() + 0.5D));
+        int interval;
+        float volume;
+        if (dist >= 32.0D) {
+            interval = 100;
+            volume = 0.35F;
+        } else if (dist >= 16.0D) {
+            interval = 60;
+            volume = 0.6F;
+        } else {
+            interval = 30;
+            volume = 0.9F;
+        }
+
+        // Latido grave (pitch bajo) para distinguirlo del Silente.
+        ((ServerLevel) player.level()).playSound(null, chest, ModSounds.HEARTBEAT.get(),
+                SoundSource.HOSTILE, volume, 0.65F);
+        TRAIL_TIMERS.put(player.getUUID(), interval);
     }
 
     private static ElSilenteEntity findNearest(Player player) {

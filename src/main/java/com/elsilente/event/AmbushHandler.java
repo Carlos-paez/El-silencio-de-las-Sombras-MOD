@@ -1,6 +1,7 @@
 package com.elsilente.event;
 
 import com.elsilente.ElSilenteMod;
+import com.elsilente.config.ElSilenteConfig;
 import com.elsilente.entity.ElSilenteEntity;
 import com.elsilente.registry.ModEntities;
 import com.elsilente.registry.ModSounds;
@@ -38,6 +39,12 @@ public class AmbushHandler {
         MinecraftServer server = event.getServer();
         processPendingSpawns(server);
 
+        if (!ElSilenteConfig.COMMON.ambushEnabled.get()) {
+            return;
+        }
+        float chance = ElSilenteConfig.COMMON.ambushChance.get().floatValue();
+        long cooldown = ElSilenteConfig.COMMON.ambushCooldownTicks.get().longValue();
+
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (player.isSpectator()) {
                 continue;
@@ -52,10 +59,12 @@ public class AmbushHandler {
             NEXT_CHECK.put(player.getUUID(), now + 6000L + player.getRandom().nextInt(3600));
 
             long lastAmbush = NEXT_AMBUSH.getOrDefault(player.getUUID(), Long.MIN_VALUE / 2);
-            if (now - lastAmbush < 12000L) {
+            if (now - lastAmbush < cooldown) {
                 continue;
             }
-            if (player.getRandom().nextFloat() > 0.20F) {
+            // La presencia acumulada aumenta la probabilidad de emboscada (+50% al maximo).
+            float presenceBoost = 1.0F + (PresenceHandler.getLevel(player) / (float) PresenceHandler.MAX) * 0.5F;
+            if (player.getRandom().nextFloat() > Math.min(1.0F, chance * presenceBoost)) {
                 continue;
             }
 
@@ -75,6 +84,7 @@ public class AmbushHandler {
             entity.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, player.getYRot(), 0.0F);
             level.addFreshEntity(entity);
             entity.startChase(player);
+            PresenceHandler.raise(player, 20);
             level.playSound(null, pos, ModSounds.SCREAM.get(), SoundSource.HOSTILE, 1.5F, 1.0F);
             level.sendParticles(ParticleTypes.LARGE_SMOKE, pos.getX() + 0.5D, pos.getY() + 1.0D,
                     pos.getZ() + 0.5D, 30, 0.4D, 0.8D, 0.4D, 0.02D);

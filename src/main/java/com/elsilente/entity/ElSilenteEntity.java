@@ -1,10 +1,12 @@
 package com.elsilente.entity;
 
 import com.elsilente.ElSilenteMod;
+import com.elsilente.config.ElSilenteConfig;
 import com.elsilente.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -27,11 +29,19 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.CampfireBlock;
+import net.minecraft.world.level.block.CandleBlock;
 import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.LanternBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.TorchBlock;
+import net.minecraft.world.level.block.WallTorchBlock;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,6 +63,7 @@ public class ElSilenteEntity extends Monster {
     private static final int STARE_TICKS_TO_VANISH = 10;
 
     private int stareTicks;
+    private int snuffSearchTimer = 40;
     private int whisperTimer = 200;
     private int chaseSoundTimer = 40;
     private int teleportTimer = 20;
@@ -103,6 +114,7 @@ public class ElSilenteEntity extends Monster {
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(1, new StalkLookGoal(this));
+        this.goalSelector.addGoal(2, new SnuffLightGoal(this));
         this.goalSelector.addGoal(4, new MeleeAttackGoal(this, 1.0D, false));
         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, false,
                 living -> this.isAggro()));
@@ -458,6 +470,127 @@ public class ElSilenteEntity extends Monster {
         @Override
         public void tick() {
             this.mob.getLookControl().setLookAt(this.lookTarget, 30.0F, 30.0F);
+        }
+    }
+
+    /**
+     * FASE STALK: sopla las luces cercanas (antorchas, linternas, velas,
+     * hogueras) antes de atacar. Nunca actua si el jugador le esta mirando.
+     * Configurable via ElSilenteConfig.snuffLightsEnabled.
+     */
+    static class SnuffLightGoal extends Goal {
+        private final ElSilenteEntity mob;
+        private BlockPos lightPos;
+        private int cooldown;
+
+        SnuffLightGoal(ElSilenteEntity mob) {
+            this.mob = mob;
+            this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            if (!ElSilenteConfig.COMMON.snuffLightsEnabled.get() || this.mob.isAggro()) {
+                return false;
+            }
+            if (this.cooldown > 0) {
+                this.cooldown--;
+                return false;
+            }
+            if (this.mob.getRandom().nextFloat() > 0.5F) {
+                return false;
+            }
+            BlockPos found = findLight();
+            if (found == null) {
+                return false;
+            }
+            // Solo si nadie le esta mirando: si le ven, se queda quieto observando.
+            Player watcher = this.mob.level().getNearestPlayer(this.mob, 24.0D);
+            if (watcher != null && watcher.hasLineOfSight(this.mob)) {
+                return false;
+            }
+            this.lightPos = found;
+            this.mob.getNavigation().moveTo(found.getX() + 0.5D, found.getY(), found.getZ() + 0.5D, 1.0D);
+            return true;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return !this.mob.isAggro() && this.lightPos != null
+                    && isSnuffable(this.mob.level().getBlockState(this.lightPos))
+                    && this.mob.distanceToSqr(this.lightPos.getX() + 0.5D, this.lightPos.getY(),
+                            this.lightPos.getZ() + 0.5D) < 256.0D;
+        }
+
+        @Override
+        public void stop() {
+            this.lightPos = null;
+            this.mob.getNavigation().stop();
+        }
+
+        @Override
+        public void tick() {
+            if (this.lightPos == null) {
+                return;
+            }
+            this.mob.getLookControl().setLookAt(this.lightPos.getX() + 0.5D, this.lightPos.getY() + 0.5D,
+                    this.lightPos.getZ() + 0.5D);
+            if (this.mob.distanceToSqr(this.lightPos.getX() + 0.5D, this.lightPos.getY(),
+                    this.lightPos.getZ() + 0.5D) < 2.6D) {
+                snuff(this.lightPos);
+                this.lightPos = null;
+                this.cooldown = 200 + this.mob.getRandom().nextInt(200);
+            }
+        }
+
+        /** Luz apagable a menos de 12 bloques (no en linea de vision del jugador). */
+        private BlockPos findLight() {
+            if (--this.mob.snuffSearchTimer > 0) {
+                return null;
+            }
+            this.mob.snuffSearchTimer = 40;
+            BlockPos origin = this.mob.blockPosition();
+            for (BlockPos candidate : BlockPos.betweenClosed(origin.offset(-12, -4, -12),
+                    origin.offset(12, 4, 12))) {
+                if (isSnuffable(this.mob.level().getBlockState(candidate))) {
+                    return candidate.immutable();
+                }
+            }
+            return null;
+        }
+
+        /** Extiende la luz: apaga si tiene estado LIT, o la disuelve en humo. */
+        private void snuff(BlockPos pos) {
+            BlockState state = this.mob.level().getBlockState(pos);
+            if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)) {
+                this.mob.level().setBlock(pos,
+                        state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT, false),
+                        3);
+            } else {
+                this.mob.level().removeBlock(pos, false);
+            }
+            if (this.mob.level() instanceof ServerLevel server) {
+                server.sendParticles(ParticleTypes.SMOKE, pos.getX() + 0.5D, pos.getY() + 0.7D,
+                        pos.getZ() + 0.5D, 14, 0.15D, 0.25D, 0.15D, 0.01D);
+            }
+            this.mob.level().playSound(null, pos, SoundEvents.GENERIC_EXTINGUISH_FIRE,
+                    SoundSource.HOSTILE, 0.7F, 0.8F);
+        }
+
+        /** Antorcha, linterna, vela u hoguera (fuego vivo). */
+        private static boolean isSnuffable(BlockState state) {
+            Block block = state.getBlock();
+            if (block instanceof TorchBlock || block instanceof WallTorchBlock
+                    || block instanceof LanternBlock) {
+                return true;
+            }
+            if (block instanceof CampfireBlock) {
+                return state.getValue(CampfireBlock.LIT);
+            }
+            if (block instanceof CandleBlock) {
+                return state.getValue(CandleBlock.LIT);
+            }
+            return false;
         }
     }
 

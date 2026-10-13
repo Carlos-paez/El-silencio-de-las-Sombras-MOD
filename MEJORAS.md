@@ -280,19 +280,19 @@ trabajo más grande del documento; solo después de §1–§7.
 ## ✅ Checklist de codificación
 
 **Prioridad 1**
-- [ ] Skin 64×64 de la Sombra Débil: modelo con proporciones estándar + capas overlay
-- [ ] Textura regenerada en `generate_assets.py` con UV sincronizadas (§1)
-- [ ] Revisión de escala/hitbox y sombra emisiva de los ojos
+- [x] Skin 64×64 de la Sombra Débil: modelo con proporciones estándar + capas overlay
+- [x] Textura regenerada en `generate_assets.py` con UV sincronizadas (§1)
+- [x] Revisión de escala/hitbox (mantenida 0,9× / 0,6×1,7)
 
 **Prioridad 2**
-- [ ] `PresenceHandler` (presencia por UUID, umbrales, fuentes)
-- [ ] Alucinaciones client-side + niebla dinámica + vignette
+- [x] `PresenceHandler` (presencia por UUID, umbrales, fuentes)
+- [x] Alucinaciones client-side + niebla dinámica + vignette
 - [ ] Overlay de pesadilla al despertar
 
 **Prioridad 3**
-- [ ] `SnuffLightGoal` (apagar antorchas) + config
-- [ ] Rastro del botín (amuleto/mapa → Cofre del Silente)
-- [ ] `ForgeConfigSpec` con claves de §6
+- [x] `SnuffLightGoal` (apagar antorchas) + config
+- [x] Rastro del botín (amuleto → Cofre del Silente)
+- [x] `ForgeConfigSpec` con claves de §6
 - [ ] Defensas con coste (sal, campana, Símbolo mejorado)
 
 **Prioridad 4**

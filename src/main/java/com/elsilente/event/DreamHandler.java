@@ -7,6 +7,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
@@ -52,7 +53,14 @@ public class DreamHandler {
             return;
         }
         Boolean threat = THREAT_WHILE_SLEEPING.remove(player.getUUID());
-        if (threat == null || !threat || !player.isAlive() || player.isCreative() || player.isSpectator()) {
+        if (threat == null || !player.isAlive() || player.isCreative() || player.isSpectator()) {
+            return;
+        }
+        if (!threat) {
+            // Dormir sin incidentes calma la presencia del mundo de las sombras.
+            if (player.getHealth() >= player.getMaxHealth() && player instanceof ServerPlayer serverPlayer) {
+                PresenceHandler.lower(serverPlayer, 10);
+            }
             return;
         }
 
@@ -67,5 +75,8 @@ public class DreamHandler {
         }
         player.displayClientMessage(Component.translatable("elsilente.message.nightmare")
                 .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC), false);
+        if (player instanceof ServerPlayer serverPlayer) {
+            PresenceHandler.raise(serverPlayer, 20);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.elsilente.entity;
 
+import com.elsilente.config.ElSilenteConfig;
 import com.elsilente.registry.ModEntities;
 import com.elsilente.registry.ModItems;
 import com.elsilente.registry.ModSounds;
@@ -211,10 +212,10 @@ public class SombraDebilEntity extends PathfinderMob {
         if (look.dot(to) > 0.7D) {
             return false;
         }
-        // Cupo por jugador: maximo 6 sombras alrededor de el.
+        // Cupo por jugador: maximo N sombras alrededor de el (configurable).
         List<SombraDebilEntity> nearby = world.getEntitiesOfClass(SombraDebilEntity.class,
                 new AABB(pos).inflate(48.0D));
-        if (nearby.size() >= 6) {
+        if (nearby.size() >= ElSilenteConfig.COMMON.maxShadowsPerPlayer.get()) {
             return false;
         }
         com.elsilente.ElSilenteMod.LOGGER.debug("[El Silente] Spawn de sombra aceptado en {} (luz {})",

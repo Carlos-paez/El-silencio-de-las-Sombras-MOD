@@ -315,12 +315,20 @@ COL_TRANSPARENT = (0, 0, 0, 0)
 #   sotana delantera          : (5,37)-(14,44)
 #   mano derecha / izquierda  : (33,37)-(38,41) / (21,53)-(26,57)
 #
-# Atlas UV de la Sombra Debil (64x64). DEBE coincidir con SombraDebilModel.java:
-#   cabeza 6x6x6      : (0,0)-(24,12)   -> cara frontal en (6,6)-(12,12)
-#   torso 8x8x4       : (0,12)-(24,24)  -> pecho en (4,16)-(12,24)
-#   brazos 2x8x2      : (24,12)-(40,22)
-#   piernas 4x6x4     : (0,24)-(32,34)
-#   ojos de la sombra : x=7,8 y x=10,11 ; y=8,9
+# Atlas UV de la Sombra Debil (64x64, formato skin de jugador). DEBE coincidir
+# con SombraDebilModel.java:
+#   cabeza 8x8x8    : (0,0)-(32,16)   -> cara frontal en (8,8)-(16,16)
+#   hat (capucha)   : (32,0)-(64,16)  -> frente en (40,8)-(48,16)
+#   torso 8x12x4    : (16,16)-(40,32) -> pecho en (20,20)-(28,32)
+#   brazo der.      : (40,16)-(56,32) -> frente en (44,20)-(48,32)
+#   brazo izq.      : (32,48)-(48,64) -> frente en (36,52)-(40,64)
+#   pierna der.     : (0,16)-(16,32)  -> frente en (4,20)-(8,32)
+#   pierna izq.     : (16,48)-(32,64) -> frente en (20,52)-(24,64)
+#   overlays (bruma semi-transparente):
+#     capucha (32,0)-(64,16) · chaqueta (16,32)-(40,48)
+#     manga der. (40,32)-(56,48) · manga izq. (48,48)-(64,64)
+#     pantalon der. (0,32)-(16,48) · pantalon izq. (0,48)-(16,64)
+#   ojos de la sombra : x=9,10 y x=13,14 ; y=11,12
 # ---------------------------------------------------------------------------
 EYE_CORES = ((9, 11, 11, 13), (13, 15, 11, 13))  # (x0, x1, y0, y1) excluyente
 FACE_BOX = (8, 8, 16, 16)                           # cara frontal de la cabeza
@@ -415,8 +423,11 @@ def make_silente_eyes(core, halo):
 
 
 def make_sombra():
-    """Sombra Debil: masa oscura ondulada con dos ojos palidos (atlas 64x64).
+    """Sombra Debil: skin 64x64 de jugador (cuerpo opaco + overlay de bruma).
 
+    Formato estandar de skin moderna: cuerpo completo con capas overlay
+    semi-transparentes (capucha, chaqueta, mangas y pantalones) que simulan
+    la bruma condensada y el borde inferior deshilachado.
     Coordenadas espejo de SombraDebilModel.java (ver cabecera del atlas).
     """
     rng = np.random.default_rng(7)
@@ -432,26 +443,49 @@ def make_sombra():
     img = Image.frombytes("RGBA", (64, 64), rgb.tobytes())
     px = img.load()
 
-    # Cara (6,6)-(12,12): hueco oscuro con dos ojos palidos de 2x2.
-    _fill(px, 6, 6, 12, 12, (6, 7, 13, 255))
-    _fill(px, 7, 8, 9, 10, (214, 226, 255, 255))
-    _fill(px, 10, 8, 12, 10, (214, 226, 255, 255))
+    # Cara (8,8)-(16,16): hueco oscuro con dos ojos palidos de 2x2.
+    _fill(px, 8, 8, 16, 16, (6, 7, 13, 255))
+    _fill(px, 9, 11, 11, 13, (214, 226, 255, 255))
+    _fill(px, 13, 11, 15, 13, (214, 226, 255, 255))
     # Halo tenue alrededor de los ojos (sin salirse de la cabeza).
-    for (x, y) in ((6, 8), (6, 9), (9, 8), (9, 9), (7, 7), (8, 7),
-                   (10, 7), (11, 7), (7, 10), (8, 10), (10, 10), (11, 10)):
+    for (x, y) in ((8, 10), (9, 10), (10, 10), (11, 10), (12, 10),
+                   (8, 11), (8, 12), (11, 11), (11, 12), (12, 11), (12, 12),
+                   (8, 13), (9, 13), (10, 13), (11, 13), (12, 13),
+                   (13, 10), (14, 10), (15, 10), (15, 11), (15, 12), (15, 13)):
         px[x, y] = (58, 68, 108, 255)
 
-    # Pecho (4,16)-(12,24): costillas tenues.
-    _fill(px, 7, 16, 9, 24, (14, 15, 25, 255))
-    for y in (17, 20, 23):
-        _fill(px, 5, y, 11, y + 1, (30, 33, 48, 255))
+    # Resto de la cabeza (lados, frente y nuca): vacio casi negro.
+    _fill(px, 0, 8, 8, 16, (5, 5, 10, 255))
+    _fill(px, 16, 8, 32, 16, (5, 5, 10, 255))
+    _fill(px, 8, 0, 16, 8, (4, 4, 8, 255))
+
+    # Pecho (20,20)-(28,32): costillas tenues.
+    _fill(px, 23, 20, 25, 32, (14, 15, 25, 255))
+    for y in (21, 24, 27, 30):
+        _fill(px, 21, y, 27, y + 1, (30, 33, 48, 255))
 
     # Brazos y piernas: tono mas plano, como humo condensado.
-    for (x0, y0, x1, y1) in ((24, 12, 40, 22), (0, 24, 32, 34)):
+    for (x0, y0, x1, y1) in ((40, 16, 56, 32), (32, 48, 48, 64),
+                             (0, 16, 16, 32), (16, 48, 32, 64)):
         for y in range(y0, y1):
             for x in range(x0, x1):
                 if (x + y) % 5 == 0:
                     px[x, y] = (16, 17, 30, 255)
+
+    # Capas overlay: bruma eterea semi-transparente. El borde inferior se
+    # deshilacha hasta el hueco (aire entre la masa oscura y el vapuleo).
+    overlays = ((32, 0, 64, 16), (16, 32, 40, 48), (40, 32, 56, 48),
+                (48, 48, 64, 64), (0, 32, 16, 48), (0, 48, 16, 64))
+    veil = rng.integers(100, 155, size=(64, 64)).astype(np.uint8)
+    for (x0, y0, x1, y1) in overlays:
+        for y in range(y0, y1):
+            fade = (y - y0) / float(y1 - y0)
+            for x in range(x0, x1):
+                a = int(veil[x, y] * (1.0 - 0.85 * fade))
+                if fade > 0.75 and rng.random() < 0.45:
+                    a = 0
+                src = px[x, y]
+                px[x, y] = (src[0], src[1], src[2], a)
     return img
 
 
