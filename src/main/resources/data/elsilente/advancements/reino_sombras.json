@@ -1,0 +1,27 @@
+{
+  "parent": "elsilente:invoca_umbral",
+  "display": {
+    "icon": { "item": "elsilente:portal_umbral" },
+    "title": { "translate": "advancements.elsilente.reino_sombras.title" },
+    "description": { "translate": "advancements.elsilente.reino_sombras.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "entras": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": { "dimension": "elsilente:reino_sombras" }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [ [ "entras" ] ],
+  "sends_telemetry_event": true
+}

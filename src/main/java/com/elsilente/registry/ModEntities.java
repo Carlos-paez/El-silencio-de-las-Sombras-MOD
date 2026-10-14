@@ -43,6 +43,14 @@ public class ModEntities {
                     .clientTrackingRange(10)
                     .build("elsilente:umbral"));
 
+    /** Silente Verdadero (§13): la version «verdadera» que habita el reino de sombras. */
+    public static final RegistryObject<EntityType<ElSilenteEntity>> SILENTE_VERDADERO = ENTITIES.register("silente_verdadero",
+            () -> EntityType.Builder
+                    .of(ElSilenteEntity::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.99F)
+                    .clientTrackingRange(10)
+                    .build("elsilente:silente_verdadero"));
+
     public static void register(IEventBus bus) {
         ENTITIES.register(bus);
     }
@@ -51,6 +59,7 @@ public class ModEntities {
         event.put(EL_SILENTE.get(), ElSilenteEntity.createAttributes().build());
         event.put(SOMBRA_DEBIL.get(), SombraDebilEntity.createAttributes().build());
         event.put(UMBRAL.get(), UmbralEntity.createAttributes().build());
+        event.put(SILENTE_VERDADERO.get(), ElSilenteEntity.createRealmAttributes().build());
     }
 
     public static void registerSpawnPlacements() {
@@ -67,5 +76,23 @@ public class ModEntities {
                 SpawnPlacements.Type.ON_GROUND,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 (type, level, spawnType, pos, random) -> spawnType != MobSpawnType.NATURAL);
+        // Silente Verdadero: solo nace de forma natural en su reino (§13).
+        SpawnPlacements.register(SILENTE_VERDADERO.get(),
+                SpawnPlacements.Type.ON_GROUND,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                (type, level, spawnType, pos, random) -> {
+                    if (spawnType != MobSpawnType.NATURAL) {
+                        return true;
+                    }
+                    if (level.getLevel().dimension() != com.elsilente.event.ReinoHandler.REINO) {
+                        return false;
+                    }
+                    if (level.getMaxLocalRawBrightness(pos) > 7) {
+                        return false;
+                    }
+                    // Jamas pegado al jugador (12 bloques).
+                    return level.getLevel().getNearestPlayer(pos.getX(), pos.getY(), pos.getZ(),
+                            12.0D, false) == null;
+                });
     }
 }

@@ -1,0 +1,10 @@
+{
+  "type": "forge:add_spawns",
+  "biomes": "elsilente:llanura_ceniza",
+  "spawners": {
+    "type": "elsilente:sombra_debil",
+    "weight": 100,
+    "minCount": 1,
+    "maxCount": 3
+  }
+}

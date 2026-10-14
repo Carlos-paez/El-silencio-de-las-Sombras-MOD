@@ -1,0 +1,28 @@
+{
+  "parent": "elsilente:reino_sombras",
+  "display": {
+    "icon": { "item": "elsilente:corazon_silente" },
+    "title": { "translate": "advancements.elsilente.corazon_verdadero.title" },
+    "description": { "translate": "advancements.elsilente.corazon_verdadero.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "derrotado": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": { "type": "elsilente:silente_verdadero" }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [ [ "derrotado" ] ],
+  "sends_telemetry_event": true
+}

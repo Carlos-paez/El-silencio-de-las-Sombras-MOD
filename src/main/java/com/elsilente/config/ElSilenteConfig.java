@@ -49,6 +49,9 @@ public final class ElSilenteConfig {
         public final ForgeConfigSpec.BooleanValue bellEnabled;
         public final ForgeConfigSpec.IntValue symbolCharges;
 
+        // --- Reino de las sombras (§13) ---
+        public final ForgeConfigSpec.BooleanValue realmEnabled;
+
         Common(ForgeConfigSpec.Builder builder) {
             builder.push("general");
 
@@ -100,6 +103,13 @@ public final class ElSilenteConfig {
             symbolCharges = builder
                     .comment("Cargas de luz del Simbolo del Alba (recarga con un Corazon Silente).")
                     .defineInRange("symbolCharges", 3, 1, 9);
+
+            builder.pop();
+            builder.push("endgame");
+
+            realmEnabled = builder
+                    .comment("La derrota del Umbral abre la Grieta del Umbral al reino de las sombras (§13).")
+                    .define("realmEnabled", true);
 
             builder.pop();
         }

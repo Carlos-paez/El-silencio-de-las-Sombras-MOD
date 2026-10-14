@@ -2,6 +2,7 @@ package com.elsilente.registry;
 
 import com.elsilente.ElSilenteMod;
 import com.elsilente.block.LineaSalBlock;
+import com.elsilente.block.PortalUmbralBlock;
 import com.elsilente.block.TrofeoUmbralBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -30,6 +31,15 @@ public class ModBlocks {
                     .strength(0.3F)
                     .sound(SoundType.SAND)
                     .randomTicks()
+                    .noOcclusion()));
+
+    /** Grieta del Umbral (§13): portal al reino de las sombras. */
+    public static final RegistryObject<Block> PORTAL_UMBRAL = BLOCKS.register("portal_umbral",
+            () -> new PortalUmbralBlock(BlockBehaviour.Properties.of()
+                    .strength(5.0F, 600.0F)
+                    .sound(SoundType.SOUL_SAND)
+                    .lightLevel(state -> 7)
+                    .noCollission()
                     .noOcclusion()));
 
     public static void register(IEventBus bus) {

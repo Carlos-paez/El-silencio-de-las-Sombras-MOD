@@ -62,6 +62,17 @@ public class ModItems {
     public static final RegistryObject<Item> CAMPANA_VIGILIA = ITEMS.register("campana_vigilia",
             () -> new CampanaVigiliaItem(new Item.Properties().stacksTo(1)));
 
+    // Reino de las sombras (§13 de MEJORAS.md)
+
+    /** Grieta del Umbral: portal a la dimension del reino de sombras. */
+    public static final RegistryObject<Item> PORTAL_UMBRAL = ITEMS.register("portal_umbral",
+            () -> new BlockItem(ModBlocks.PORTAL_UMBRAL.get(), new Item.Properties()));
+
+    /** Silente Verdadero: la version del reino, suelta dos Corazones Silente. */
+    public static final RegistryObject<Item> SILENTE_VERDADERO_SPAWN_EGG = ITEMS.register("silente_verdadero_spawn_egg",
+            () -> new ForgeSpawnEggItem(() -> ModEntities.SILENTE_VERDADERO.get(),
+                    0x1A0E2E, 0xE0D0FF, new Item.Properties()));
+
     public static void register(IEventBus bus) {
         ITEMS.register(bus);
     }

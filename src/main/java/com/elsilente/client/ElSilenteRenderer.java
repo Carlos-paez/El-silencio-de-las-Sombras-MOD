@@ -7,12 +7,21 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
+import software.bernie.geckolib.cache.object.BakedGeoModel;
+import software.bernie.geckolib.renderer.GeoEntityRenderer;
+import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
-public class ElSilenteRenderer extends MobRenderer<ElSilenteEntity, ElSilenteModel> {
+/**
+ * Renderer GeckoLib de El Silente (§12 de MEJORAS.md).
+ *
+ * La capa emisiva de ojos ahora vive sobre el sistema de capas de GeckoLib:
+ * dibuja el modelo geo completo con RenderType.eyes() usando la textura de
+ * ojos (blanco en STALK, rojo en CHASE); el resto del atlas esta transparente,
+ * de modo que solo brillan los ojos en la oscuridad.
+ */
+public class ElSilenteRenderer extends GeoEntityRenderer<ElSilenteEntity> {
 
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(ElSilenteMod.MODID, "textures/entity/el_silente.png");
@@ -22,39 +31,53 @@ public class ElSilenteRenderer extends MobRenderer<ElSilenteEntity, ElSilenteMod
             new ResourceLocation(ElSilenteMod.MODID, "textures/entity/el_silente_eyes_angry.png");
 
     public ElSilenteRenderer(EntityRendererProvider.Context context) {
-        super(context, new ElSilenteModel(context.bakeLayer(ElSilenteModel.LAYER)), 0.0F);
-        this.addLayer(new EyesLayer(this));
+        super(context, new ElSilenteGeoModel());
+        this.addRenderLayer(new EyesLayer(this));
     }
 
     @Override
-    public ResourceLocation getTextureLocation(ElSilenteEntity entity) {
+    public ResourceLocation getTextureLocation(ElSilenteEntity animatable) {
         return TEXTURE;
     }
 
     @Override
-    protected void scale(ElSilenteEntity entity, PoseStack poseStack, float partialTick) {
+    public void preRender(PoseStack poseStack, ElSilenteEntity animatable, BakedGeoModel model,
+                          MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender,
+                          float partialTick, int packedLight, int packedOverlay,
+                          float red, float green, float blue, float alpha) {
+        super.preRender(poseStack, animatable, model, bufferSource, buffer, isReRender,
+                partialTick, packedLight, packedOverlay, red, green, blue, alpha);
         // Modelo de 2 bloques de alto: 1.1 lo mantiene un poco por encima del jugador
-        // sin despeguarse de la hitbox (1.99 bloques).
+        // sin despegarse de la hitbox (1.99 bloques).
         poseStack.scale(1.1F, 1.1F, 1.1F);
     }
 
+    @Override
+    public RenderType getRenderType(ElSilenteEntity animatable, ResourceLocation texture,
+                                    MultiBufferSource bufferSource, float partialTick) {
+        // Cortado sin culling: la sotana y la capucha se ven bien desde dentro.
+        return RenderType.entityCutoutNoCull(texture);
+    }
+
     /**
-     * Capa emisiva: dibuja el modelo con la textura de ojos (solo ojos opacos,
-     * el resto transparente). Brilla en la oscuridad y cambia a rojo en CHASE.
+     * Capa emisiva de ojos sobre GeckoLib: RenderType.eyes ignora la luz,
+     * asi que brillan en la oscuridad y cambian a rojo en CHASE.
      */
-    private static class EyesLayer extends RenderLayer<ElSilenteEntity, ElSilenteModel> {
+    private static class EyesLayer extends GeoRenderLayer<ElSilenteEntity> {
 
         EyesLayer(ElSilenteRenderer renderer) {
             super(renderer);
         }
 
         @Override
-        public void render(PoseStack poseStack, MultiBufferSource buffer, int packedLight, ElSilenteEntity entity,
-                           float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks,
-                           float netHeadYaw, float headPitch) {
-            ResourceLocation texture = entity.isAggro() ? EYES_ANGRY : EYES;
-            VertexConsumer consumer = buffer.getBuffer(RenderType.eyes(texture));
-            this.getParentModel().renderToBuffer(poseStack, consumer, 15728640, OverlayTexture.NO_OVERLAY,
+        public void render(PoseStack poseStack, ElSilenteEntity animatable, BakedGeoModel model,
+                           RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer,
+                           float partialTick, int packedLight, int packedOverlay) {
+            RenderType eyesType = RenderType.eyes(animatable.isAggro() ? EYES_ANGRY : EYES);
+            VertexConsumer eyesBuffer = bufferSource.getBuffer(eyesType);
+            // 15728640 (0xF000F0): luz maxima, igual que AutoGlowingGeoLayer.
+            this.getRenderer().reRender(model, poseStack, bufferSource, animatable, eyesType,
+                    eyesBuffer, partialTick, 15728640, OverlayTexture.NO_OVERLAY,
                     1.0F, 1.0F, 1.0F, 1.0F);
         }
     }

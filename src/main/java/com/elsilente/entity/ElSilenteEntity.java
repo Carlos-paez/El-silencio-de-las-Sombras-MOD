@@ -43,6 +43,14 @@ import net.minecraft.world.level.block.TorchBlock;
 import net.minecraft.world.level.block.WallTorchBlock;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.core.animation.AnimationController;
+import software.bernie.geckolib.core.animation.AnimationState;
+import software.bernie.geckolib.core.animation.RawAnimation;
+import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -56,10 +64,25 @@ import java.util.UUID;
  *  - STALK (Aggro=false): quieto, observa al jugador mas cercano con ojos blancos.
  *  - CHASE (Aggro=true): persecucion y ataque con ojos rojos.
  */
-public class ElSilenteEntity extends Monster {
+public class ElSilenteEntity extends Monster implements GeoEntity {
 
     private static final EntityDataAccessor<Boolean> DATA_AGGRO =
             SynchedEntityData.defineId(ElSilenteEntity.class, EntityDataSerializers.BOOLEAN);
+
+    // Animaciones GeckoLib (§12 de MEJORAS.md): flotación en STALK, acecho
+    // encorvado y zarpazo disparado desde doHurtTarget().
+    private static final RawAnimation STALK_FLOAT =
+            RawAnimation.begin().thenLoop("animation.el_silente.stalk");
+    private static final RawAnimation STALK_WALK =
+            RawAnimation.begin().thenLoop("animation.el_silente.stalk_walk");
+    private static final RawAnimation CHASE_IDLE =
+            RawAnimation.begin().thenLoop("animation.el_silente.chase_idle");
+    private static final RawAnimation CHASE_WALK =
+            RawAnimation.begin().thenLoop("animation.el_silente.chase_walk");
+    private static final RawAnimation ATTACK =
+            RawAnimation.begin().thenPlay("animation.el_silente.attack");
+
+    private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
     public static final List<PendingSpawn> PENDING_SPAWNS = new ArrayList<>();
 
@@ -86,6 +109,33 @@ public class ElSilenteEntity extends Monster {
         super(type, level);
     }
 
+    // ---------------------------------------------------------------------------
+    // GeckoLib (§12): controladores de animación.
+    // ---------------------------------------------------------------------------
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        // Fase: STALK flota / camina encorvado; CHASE respira hincado / corre.
+        controllers.add(new AnimationController<>(this, "phases", 5, this::posePhase));
+        // Zarpazo: se dispara con triggerAnim("attacks", "attack") al golpear.
+        controllers.add(new AnimationController<>(this, "attacks", 0, state -> PlayState.STOP)
+                .triggerableAnim("attack", ATTACK));
+    }
+
+    private PlayState posePhase(AnimationState<ElSilenteEntity> state) {
+        if (state.isMoving()) {
+            state.setAndContinue(this.isAggro() ? CHASE_WALK : STALK_WALK);
+        } else {
+            state.setAndContinue(this.isAggro() ? CHASE_IDLE : STALK_FLOAT);
+        }
+        return PlayState.CONTINUE;
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return this.geoCache;
+    }
+
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
                 .add(Attributes.MAX_HEALTH, 80.0D)
@@ -94,6 +144,16 @@ public class ElSilenteEntity extends Monster {
                 .add(Attributes.ATTACK_DAMAGE, 10.0D)
                 .add(Attributes.FOLLOW_RANGE, 64.0D)
                 // 1.0: no sufre retroceso al recibir golpes.
+                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D);
+    }
+
+    /** Atributos del Silente Verdadero (§13): mas vida, dano y velocidad. */
+    public static AttributeSupplier.Builder createRealmAttributes() {
+        return Monster.createMonsterAttributes()
+                .add(Attributes.MAX_HEALTH, 120.0D)
+                .add(Attributes.MOVEMENT_SPEED, 0.36D)
+                .add(Attributes.ATTACK_DAMAGE, 14.0D)
+                .add(Attributes.FOLLOW_RANGE, 64.0D)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D);
     }
 
@@ -483,6 +543,8 @@ public class ElSilenteEntity extends Monster {
     public boolean doHurtTarget(Entity target) {
         boolean success = super.doHurtTarget(target);
         if (success) {
+            // Zarpazo animado (GeckoLib).
+            this.triggerAnim("attacks", "attack");
             this.level().playSound(null, this.blockPosition(), ModSounds.ATTACK.get(),
                     SoundSource.HOSTILE, 1.0F, 1.0F);
             if (target instanceof LivingEntity living) {

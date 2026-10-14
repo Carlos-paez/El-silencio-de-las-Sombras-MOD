@@ -1,0 +1,10 @@
+{
+  "type": "forge:add_spawns",
+  "biomes": "elsilente:llanura_ceniza",
+  "spawners": {
+    "type": "elsilente:el_silente",
+    "weight": 30,
+    "minCount": 1,
+    "maxCount": 1
+  }
+}

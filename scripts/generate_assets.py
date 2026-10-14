@@ -781,6 +781,45 @@ def make_linea_sal():
     return img
 
 
+def make_portal_umbral():
+    """Grieta del Umbral (16x16): fisura violacea con almas atrapadas (§13)."""
+    rng = np.random.default_rng(107)
+    img = Image.new("RGBA", (16, 16), COL_TRANSPARENT)
+    px = img.load()
+    base = (12, 6, 18, 255)
+    vein = (86, 40, 130, 255)
+    spark = (170, 110, 255, 255)
+    wisp = (226, 208, 255, 255)
+    cx = 7.5
+    # Bulto central oscuro con vetas espirales (como el portal del Nether, pero
+    # violaceo y denso): la grieta parece respirar.
+    for y in range(16):
+        for x in range(16):
+            d = ((x - cx) / 6.8) ** 2 + ((y - cx) / 7.8) ** 2
+            if d > 1.0:
+                continue
+            swirl = np.sin(d * 9.0 + rng.random() * 0.6) * 0.5 + 0.5
+            v = rng.random()
+            if v < 0.10 + swirl * 0.30:
+                px[x, y] = vein
+            else:
+                px[x, y] = base
+    # Nucleo de almas: hilo vertical claro que serpentea.
+    for y in range(1, 15):
+        wob = int(round(np.sin(y / 2.1) * 1.8))
+        x = int(cx) + wob
+        px[x, y] = spark
+        if y % 3 == 0:
+            px[x, y - 1] = wisp
+    # Chispas sueltas alrededor.
+    for _ in range(6):
+        x = int(rng.integers(2, 14))
+        y = int(rng.integers(2, 14))
+        if px[x, y][3] > 0 and px[x, y][:3] != (12, 6, 18):
+            px[x, y] = spark
+    return img
+
+
 def make_campana_vigilia():
     """Campana de vigilia (16x16): bronce agrietado con badajo de hueso."""
     rng = np.random.default_rng(103)
@@ -918,6 +957,7 @@ def generate_textures():
         os.path.join(TEX_ITEM, "lampara_penitente.png"): make_lampara(),
         os.path.join(TEX_BLOCK, "trofeo_umbral.png"): make_trofeo(),
         os.path.join(TEX_BLOCK, "linea_sal.png"): make_linea_sal(),
+        os.path.join(TEX_BLOCK, "portal_umbral.png"): make_portal_umbral(),
         os.path.join(TEX_ITEM, "campana_vigilia.png"): make_campana_vigilia(),
     }
     for path, img in files.items():
