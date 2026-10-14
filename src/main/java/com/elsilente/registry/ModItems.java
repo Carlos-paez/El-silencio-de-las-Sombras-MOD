@@ -2,6 +2,8 @@ package com.elsilente.registry;
 
 import com.elsilente.ElSilenteMod;
 import com.elsilente.item.AmuletItem;
+import com.elsilente.item.CampanaVigiliaItem;
+import com.elsilente.item.CorazonSilenteItem;
 import com.elsilente.item.GuadanaSegadorItem;
 import com.elsilente.item.LamparaPenitenteItem;
 import com.elsilente.item.SimboloAlbaItem;
@@ -19,7 +21,7 @@ public class ModItems {
             DeferredRegister.create(ForgeRegistries.ITEMS, ElSilenteMod.MODID);
 
     public static final RegistryObject<Item> CORAZON_SILENTE = ITEMS.register("corazon_silente",
-            () -> new Item(new Item.Properties()));
+            () -> new CorazonSilenteItem(new Item.Properties()));
 
     public static final RegistryObject<Item> AMULETO_LATIDO = ITEMS.register("amuleto_latido",
             () -> new AmuletItem(new Item.Properties().stacksTo(1)));
@@ -49,6 +51,16 @@ public class ModItems {
 
     public static final RegistryObject<Item> UMBRAL_SPAWN_EGG = ITEMS.register("umbral_spawn_egg",
             () -> new ForgeSpawnEggItem(() -> ModEntities.UMBRAL.get(), 0x2A1B3D, 0xB08CFF, new Item.Properties()));
+
+    // Defensas activas con coste (§7 de MEJORAS.md)
+
+    /** Cojinete de sal: bloquea el spawn natural de Sombras en su radio. */
+    public static final RegistryObject<Item> LINEA_SAL = ITEMS.register("linea_sal",
+            () -> new BlockItem(ModBlocks.LINEA_SAL.get(), new Item.Properties()));
+
+    /** Campana de vigilia: cancela la emboscada de la noche y atrae Sombras. */
+    public static final RegistryObject<Item> CAMPANA_VIGILIA = ITEMS.register("campana_vigilia",
+            () -> new CampanaVigiliaItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus bus) {
         ITEMS.register(bus);

@@ -1,0 +1,16 @@
+{
+  "display": {
+    "icon": { "item": "minecraft:white_bed" },
+    "title": { "translate": "advancements.elsilente.sombra_durmiente.title" },
+    "description": { "translate": "advancements.elsilente.sombra_durmiente.description" },
+    "frame": "task",
+    "background": "minecraft:textures/gui/advancements/backgrounds/dark.png",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "dormiste": { "trigger": "minecraft:slept_in_bed" }
+  },
+  "sends_telemetry_event": true
+}

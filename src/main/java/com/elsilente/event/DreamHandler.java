@@ -1,7 +1,10 @@
 package com.elsilente.event;
 
 import com.elsilente.ElSilenteMod;
+import com.elsilente.client.ClientNightmare;
 import com.elsilente.entity.SombraDebilEntity;
+import com.elsilente.network.ModNetwork;
+import com.elsilente.network.NightmareFlashPacket;
 import com.elsilente.registry.ModSounds;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
@@ -14,6 +17,7 @@ import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
 import net.minecraftforge.event.entity.player.PlayerWakeUpEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -76,6 +80,9 @@ public class DreamHandler {
         player.displayClientMessage(Component.translatable("elsilente.message.nightmare")
                 .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC), false);
         if (player instanceof ServerPlayer serverPlayer) {
+            // Overlay de alucinacion en el cliente (frame de niebla + fundido).
+            ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer),
+                    new NightmareFlashPacket(ClientNightmare.DEFAULT_DURATION));
             PresenceHandler.raise(serverPlayer, 20);
         }
     }

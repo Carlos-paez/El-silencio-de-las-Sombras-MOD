@@ -1,0 +1,28 @@
+{
+  "parent": "elsilente:invoca_umbral",
+  "display": {
+    "icon": { "item": "elsilente:trofeo_umbral" },
+    "title": { "translate": "advancements.elsilente.derrota_umbral.title" },
+    "description": { "translate": "advancements.elsilente.derrota_umbral.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "derrotado": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": { "type": "elsilente:umbral" }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [ [ "derrotado" ] ],
+  "sends_telemetry_event": true
+}

@@ -1,0 +1,17 @@
+{
+  "parent": "elsilente:sombra_durmiente",
+  "display": {
+    "icon": { "item": "elsilente:corazon_silente" },
+    "title": { "translate": "advancements.elsilente.invoca_umbral.title" },
+    "description": { "translate": "advancements.elsilente.invoca_umbral.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "invocado": { "trigger": "minecraft:impossible" }
+  },
+  "requirements": [ [ "invocado" ] ],
+  "sends_telemetry_event": true
+}

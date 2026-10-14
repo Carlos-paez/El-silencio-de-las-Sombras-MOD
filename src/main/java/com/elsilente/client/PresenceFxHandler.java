@@ -104,7 +104,7 @@ public class PresenceFxHandler {
 
     @SubscribeEvent
     public static void onRenderFog(ViewportEvent.RenderFog event) {
-        float t = fogFactor();
+        float t = totalFogFactor();
         if (t <= 0.0F) {
             return;
         }
@@ -115,7 +115,7 @@ public class PresenceFxHandler {
 
     @SubscribeEvent
     public static void onFogColor(ViewportEvent.ComputeFogColor event) {
-        float t = fogFactor();
+        float t = totalFogFactor();
         if (t <= 0.0F) {
             return;
         }
@@ -123,6 +123,14 @@ public class PresenceFxHandler {
         event.setRed(event.getRed() * (1.0F - 0.55F * t));
         event.setGreen(event.getGreen() * (1.0F - 0.60F * t));
         event.setBlue(event.getBlue() * (1.0F - 0.35F * t));
+    }
+
+    /**
+     * Intensidad total de niebla: presencia + el frame de niebla del overlay
+     * de pesadilla (ClientNightmare), que la dispara un instante al despertar.
+     */
+    private static float totalFogFactor() {
+        return Math.max(fogFactor(), ClientNightmare.intensity());
     }
 
     /** Factor 0..1 de intensidad de la niebla de presencia (solo Overworld). */
@@ -149,6 +157,7 @@ public class PresenceFxHandler {
         @SubscribeEvent
         public static void onRegisterOverlays(RegisterGuiOverlaysEvent event) {
             event.registerAboveAll("presence_vignette", ModBus::renderVignette);
+            event.registerAboveAll("nightmare_flash", ClientNightmare::render);
         }
 
         private static void renderVignette(Gui gui, GuiGraphics graphics, float partialTick,

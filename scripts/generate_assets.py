@@ -12,6 +12,8 @@ Uso:
     python scripts/generate_assets.py
 """
 
+import gzip
+import json
 import os
 import struct
 import shutil
@@ -109,8 +111,22 @@ def make_heartbeat():
 
 
 def make_whisper():
+    return _make_whisper(7)
+
+
+def make_whisper2():
+    """Variante estéreo 2 del susurro (otra semilla/tono)."""
+    return _make_whisper(19)
+
+
+def make_whisper3():
+    """Variante estéreo 3 del susurro (mas grave y lenta)."""
+    return _make_whisper(31)
+
+
+def _make_whisper(seed):
     n = int(SR * 2.5)
-    rng = np.random.default_rng(7)
+    rng = np.random.default_rng(seed)
     noise = lowpass(rng.standard_normal(n), 1200.0)
     env = np.zeros(n)
     syllables = rng.integers(3, 7)
@@ -227,13 +243,107 @@ def make_umbral_summon():
     return normalize(swell * env + sub, 0.9)
 
 
+# ---------------------------------------------------------------------------
+# Mejoras §10: música por fases + sonido ambiental procedural.
+# Los bucles se sintetizan PERFECTAMENTE PERIODICOS (componentes con numero
+# entero de ciclos + ruido por FFT) para que den la vuelta sin ningun click.
+# ---------------------------------------------------------------------------
+
+def periodic_noise(n, low, high, rng, color=1.5):
+    """Ruido limitado de banda y periodico de largo n (bucle limpio)."""
+    freqs = np.fft.rfftfreq(n, 1.0 / SR)
+    mag = np.zeros_like(freqs)
+    band = (freqs >= low) & (freqs <= high)
+    mag[band] = freqs[band] ** (-color)
+    peak = np.max(mag)
+    if peak > 1e-12:
+        mag /= peak
+    spec = mag * np.exp(1j * rng.uniform(0.0, 2.0 * np.pi, size=len(freqs)))
+    return np.fft.irfft(spec, n=n)
+
+
+def make_chase_loop():
+    """Bucle de persecución (8 s, stream): sub grave + pulsos de tension."""
+    n = int(SR * 8)
+    rng = np.random.default_rng(41)
+    t = np.arange(n) / SR
+    # 49 Hz = 392 ciclos en 8 s (entero) -> bucle perfecto.
+    sub = np.sin(2 * np.pi * 49.0 * t) * 0.55
+    # Pulso de tension cada 1 s (8 pulsos exactos).
+    beat = np.exp(-(t % 1.0) / 0.28)
+    pulse = np.sin(2 * np.pi * 98.0 * t) * beat * 0.45
+    noise = periodic_noise(n, 180.0, 950.0, rng, color=1.2)
+    air = periodic_noise(n, 1200.0, 4500.0, rng, color=1.0)
+    mix = sub * (0.5 + 0.5 * beat) + pulse + noise * (0.25 + 0.5 * beat) + air * 0.08 * beat
+    return normalize(np.tanh(1.6 * mix), 0.85)
+
+
+def make_stalk_silence():
+    """Silencio antes del ataque (6 s): zumbido casi inaudible y respiracion."""
+    n = int(SR * 6)
+    rng = np.random.default_rng(53)
+    t = np.arange(n) / SR
+    # 41 Hz = 246 ciclos en 6 s; respiracion = 2 ciclos en 6 s.
+    drone = np.sin(2 * np.pi * 41.0 * t) * 0.5 + np.sin(2 * np.pi * 82.0 * t) * 0.15
+    breath = 0.5 + 0.5 * np.sin(2 * np.pi * (1.0 / 3.0) * t)
+    bed = periodic_noise(n, 60.0, 260.0, rng, color=1.8) * 0.5
+    return normalize((drone + bed) * (0.35 + 0.65 * breath), 0.55)
+
+
+def make_cave_dread():
+    """Cama de cueva (10 s): lecho continuo + goteos resonantes puntuales."""
+    n = int(SR * 10)
+    rng = np.random.default_rng(61)
+    t = np.arange(n) / SR
+    bed = periodic_noise(n, 70.0, 420.0, rng, color=1.6)
+    air = periodic_noise(n, 500.0, 2400.0, rng, color=1.3) * 0.35
+    mix = bed * 0.7 + air * 0.3
+    # Goteos: mueren bien antes del final del bucle (no rompen la periodica).
+    for drip_t, freq in ((1.7, 780.0), (4.9, 620.0), (7.4, 900.0)):
+        start = int(drip_t * SR)
+        length = int(SR * 1.0)
+        if start + length >= n:
+            continue
+        tt = np.arange(length) / SR
+        drip = np.sin(2 * np.pi * freq * tt * (1.0 - 0.4 * tt)) \
+            * exp_decay(length, 0.15) * 0.5
+        mix[start:start + length] += drip
+    pad = np.sin(2 * np.pi * 55.0 * t) * 0.10  # 550 ciclos en 10 s
+    return normalize(mix + pad, 0.6)
+
+
+def make_claws():
+    """Garras rasgando la madera (0,9 s): tres raspanos y golpe final."""
+    n = int(SR * 0.9)
+    rng = np.random.default_rng(67)
+    noise = bandpass(rng.standard_normal(n), 900.0, 4800.0)
+    env = np.zeros(n)
+    for start in (0, int(SR * 0.22), int(SR * 0.44)):
+        length = int(SR * 0.16)
+        if start + length > n:
+            break
+        env[start:start + length] += np.hanning(length)
+    body = np.zeros(n)
+    hit = int(SR * 0.18)
+    start = int(SR * 0.62)
+    tt = np.arange(hit) / SR
+    body[start:start + hit] += np.sin(2 * np.pi * 95.0 * tt) * exp_decay(hit, 0.05) * 0.8
+    return normalize(noise * env * 0.9 + body, 0.75)
+
+
 RECIPES = {
     "heartbeat": make_heartbeat,
     "whisper": make_whisper,
+    "whisper2": make_whisper2,
+    "whisper3": make_whisper3,
     "scream": make_scream,
     "vanish": make_vanish,
     "attack": make_attack,
     "chase": make_chase,
+    "chase_loop": make_chase_loop,
+    "stalk_silence": make_stalk_silence,
+    "cave_dread": make_cave_dread,
+    "claws": make_claws,
     "nightmare": make_nightmare,
     "shadow_idle": make_shadow_idle,
     "umbral_roar": make_umbral_roar,
@@ -636,6 +746,73 @@ def make_trofeo():
     return img
 
 
+def make_linea_sal():
+    """Linea de sal (16x16): cojinete de granos blancos agrietado (§7)."""
+    rng = np.random.default_rng(101)
+    img = Image.new("RGBA", (16, 16), COL_TRANSPARENT)
+    px = img.load()
+    salt = (232, 234, 238, 255)
+    salt_hi = (252, 253, 255, 255)
+    salt_lo = (196, 200, 208, 255)
+    cx, cy = 7.5, 7.5
+    # Cojínente oval de granos.
+    for y in range(16):
+        for x in range(16):
+            d = ((x - cx) / 7.6) ** 2 + ((y - cy) / 5.6) ** 2
+            if d <= 1.0:
+                v = rng.random()
+                if v < 0.18:
+                    px[x, y] = salt_lo
+                elif v > 0.88:
+                    px[x, y] = salt_hi
+                else:
+                    px[x, y] = salt
+    # Grietas del salero.
+    for (x, y) in ((4, 6), (5, 7), (6, 7), (7, 8), (8, 8), (9, 9), (10, 9),
+                   (6, 10), (7, 11), (11, 6), (10, 7)):
+        if px[x, y][3] > 0:
+            px[x, y] = (170, 174, 182, 255)
+    # Granos sueltos en el borde.
+    for _ in range(8):
+        x = int(rng.integers(1, 15))
+        y = int(rng.integers(2, 14))
+        if px[x, y][3] == 0:
+            px[x, y] = (236, 238, 242, 255)
+    return img
+
+
+def make_campana_vigilia():
+    """Campana de vigilia (16x16): bronce agrietado con badajo de hueso."""
+    rng = np.random.default_rng(103)
+    img = Image.new("RGBA", (16, 16), COL_TRANSPARENT)
+    px = img.load()
+    bronze = (146, 104, 48, 255)
+    bronze_hi = (214, 168, 92, 255)
+    bronze_lo = (94, 66, 30, 255)
+    crack = (58, 40, 18, 255)
+    bone = (226, 222, 206, 255)
+    # Asa.
+    for (x, y) in ((7, 0), (8, 0), (6, 1), (9, 1)):
+        px[x, y] = bronze_hi
+    # Cuerpo de la campana (panza ancha, borde inferior).
+    body = ((2, 11, 14, 3), (3, 9, 13, 4), (4, 6, 12, 6), (5, 3, 11, 9))
+    for (x0, y0, x1, y1) in body:
+        _fill(px, x0, y0, x1, y1, bronze)
+    # Borde inferior y sombra derecha.
+    _fill(px, 2, 11, 14, 13, bronze_lo)
+    _fill(px, 11, 6, 12, 11, bronze_lo)
+    _fill(px, 4, 6, 5, 11, bronze_hi)
+    # Grieta vertical (esta campana ya ha sonado de mas).
+    for (x, y) in ((8, 4), (8, 5), (7, 6), (8, 7), (7, 8), (7, 9), (8, 10)):
+        px[x, y] = crack
+    # Badajo de hueso.
+    _fill(px, 7, 13, 9, 15, bone)
+    px[7, 14] = (186, 182, 168, 255)
+    # Brillo.
+    px[5, 4] = bronze_hi
+    return img
+
+
 def erode(mask):
     result = mask.copy()
     result[1:, :] &= mask[:-1, :]
@@ -740,6 +917,8 @@ def generate_textures():
         os.path.join(TEX_ITEM, "guadana_segador.png"): make_guadana(),
         os.path.join(TEX_ITEM, "lampara_penitente.png"): make_lampara(),
         os.path.join(TEX_BLOCK, "trofeo_umbral.png"): make_trofeo(),
+        os.path.join(TEX_BLOCK, "linea_sal.png"): make_linea_sal(),
+        os.path.join(TEX_ITEM, "campana_vigilia.png"): make_campana_vigilia(),
     }
     for path, img in files.items():
         if keep_art and os.path.exists(path):
@@ -749,9 +928,189 @@ def generate_textures():
         print("  [ok] %s" % os.path.relpath(path, ROOT))
 
 
+# ---------------------------------------------------------------------------
+# §11: Estructura de worldgen «Santuario del Silente» (NBT de 1.20.1).
+# Genera data/elsilente/structures/santuario.nbt con ruinas: altar de tierra
+# de almas, lapida, libreria de lore (libro 1) y cofre con Corazon Silente +
+# piezas del ritual. Las UV/IDs aqui DEBEN coincidir con los JSON de
+# worldgen (structure/template_pool/structure_set) del mismo nombre.
+# ---------------------------------------------------------------------------
+
+STRUCT_DATA = os.path.join(ROOT, "src", "main", "resources", "data", "elsilente", "structures")
+# 1.20.1
+DATA_VERSION_1201 = 3465
+
+
+def _nbt_string(s):
+    data = s.encode("utf-8")
+    return struct.pack(">h", len(data)) + data
+
+
+def _nbt_list(elem_type, payloads):
+    return bytes([elem_type]) + struct.pack(">i", len(payloads)) + b"".join(payloads)
+
+
+def _nbt_compound(entries):
+    """entries: [(nombre, tipo_nbt, payload_bytes), ...]"""
+    out = b""
+    for name, typ, payload in entries:
+        out += bytes([typ]) + _nbt_string(name) + payload
+    return out + b"\x00"
+
+
+def _nbt_int_list(values):
+    return _nbt_list(3, [struct.pack(">i", v) for v in values])
+
+
+def _written_book(title, author, pages):
+    page_payloads = [_nbt_string(json.dumps({"text": p}, ensure_ascii=False)) for p in pages]
+    return [
+        ("id", 8, _nbt_string("minecraft:written_book")),
+        ("Count", 1, struct.pack(">b", 1)),
+        ("tag", 10, _nbt_compound([
+            ("title", 8, _nbt_string(title)),
+            ("author", 8, _nbt_string(author)),
+            ("generation", 3, struct.pack(">i", 0)),
+            ("pages", 9, _nbt_list(8, page_payloads)),
+        ])),
+    ]
+
+
+def make_santuario_nbt():
+    """Ruinas 9x3x9: altar de soul soil, lapida, lectern con diario y cofre."""
+    w, h, d = 9, 3, 9
+    wall_props = {"up": "false", "north": "false", "east": "false",
+                  "south": "false", "west": "false", "waterlogged": "false"}
+    palette = [
+        ("minecraft:air", None),                          # 0
+        ("minecraft:cracked_stone_bricks", None),         # 1
+        ("minecraft:mossy_stone_bricks", None),           # 2
+        ("minecraft:stone_bricks", None),                 # 3
+        ("minecraft:soul_soil", None),                    # 4
+        ("minecraft:soul_sand", None),                    # 5
+        ("minecraft:mossy_cobblestone_wall", wall_props),  # 6 (lapida)
+        ("minecraft:lectern", {"facing": "south", "has_book": "true", "powered": "false"}),  # 7
+        ("minecraft:chest", {"facing": "west", "type": "single", "waterlogged": "false"}),  # 8
+        ("minecraft:coarse_dirt", None),                  # 9
+        ("minecraft:dead_bush", None),                    # 10
+        ("minecraft:cobblestone_wall", wall_props),       # 11 (pilaire roto)
+    ]
+
+    # Suelo por defecto: ladrillos agrietados con musgo en el borde.
+    grid = [[[1 for _ in range(w)] for _ in range(d)] for _ in range(h)]
+    for z in range(d):
+        for x in range(w):
+            if x in (0, 8) or z in (0, 8):
+                grid[0][z][x] = 2 if (x + z) % 3 == 0 else 1
+            elif (x + z) % 5 == 0:
+                grid[0][z][x] = 3
+            else:
+                grid[0][z][x] = 1
+    # Altar roto: tierra de almas agrietada en el centro (3x3) con nucleo de
+    # arena de almas; base de tierra tosca para el arbusto.
+    for z in range(3, 6):
+        for x in range(3, 6):
+            grid[0][z][x] = 4
+    grid[0][4][4] = 5
+    grid[0][6][1] = 9
+
+    # Superficie (aire por defecto) con los elementos de la ruina.
+    features = {
+        (4, 3): 7,    # lectern con el diario del Vigia
+        (6, 4): 8,    # cofre del santuario
+        (7, 7): 6,    # lapida (poste de mamposteria musgosa)
+        (1, 1): 11,   # pilaire roto
+        (1, 6): 10,   # arbusto muerto sobre tierra tosca
+        (2, 2): 3,    # escombros
+    }
+    for (x, z), idx in features.items():
+        grid[1][z][x] = idx
+
+    # Libro de lore (secciones que justifican ritual y debilidades).
+    book = _written_book(
+        "El diario del Vigia",
+        "Vigia sin nombre",
+        [
+            "Escribo por si alguien encuentra estas ruinas. El Silente no mata por hambre: acecha, apaga las luces y solo entonces cruza la puerta.",
+            "Ritual de medianoche: tierra de almas al centro, ocho obsidianas alrededor y velas encendidas en las cardinales. Lanza una perla de ender empuñando un Corazon Silente.",
+            "La luz lo disipa y la sal corta el nacimiento de las Sombras (no su emboscada). La Campana calla la noche... pero atrae su caza. Recarga el Simbolo con un Corazon: agachate y usalo.",
+        ])
+
+    chest_items = [
+        (0, "elsilente:corazon_silente", 1, None),
+        (1, "minecraft:obsidian", 4, None),
+        (2, "minecraft:candle", 2, None),
+        (3, "minecraft:ender_pearl", 1, None),
+        (4, "elsilente:linea_sal", 2, None),
+        (5, "minecraft:bone", 2, None),
+    ]
+    chest_nbt = [
+        ("id", 8, _nbt_string("minecraft:chest")),
+        ("Items", 9, _nbt_list(10, [
+            _nbt_compound([
+                ("Slot", 1, struct.pack(">b", slot)),
+                ("id", 8, _nbt_string(item)),
+                ("Count", 1, struct.pack(">b", count)),
+            ] + ([("tag", 10, _nbt_compound(tag))] if tag else []))
+            for (slot, item, count, tag) in chest_items
+        ])),
+    ]
+    lectern_nbt = [
+        ("id", 8, _nbt_string("minecraft:lectern")),
+        ("Book", 10, _nbt_compound(book)),
+        ("Page", 3, struct.pack(">i", 0)),
+    ]
+    block_entities = {(4, 1, 3): lectern_nbt, (6, 1, 4): chest_nbt}
+
+    # Recorrer todos los bloques (aire incluido: la plantilla despeja el hueco).
+    block_payloads = []
+    for y in range(h):
+        for z in range(d):
+            for x in range(w):
+                state = grid[y][z][x]
+                entries = [
+                    ("pos", 9, _nbt_int_list([x, y, z])),
+                    ("state", 3, struct.pack(">i", state)),
+                ]
+                nbt = block_entities.get((x, y, z))
+                if nbt:
+                    entries.append(("nbt", 10, _nbt_compound(nbt)))
+                block_payloads.append(_nbt_compound(entries))
+
+    palette_payloads = []
+    for name, props in palette:
+        entries = [("Name", 8, _nbt_string(name))]
+        if props:
+            entries.append(("Properties", 10, _nbt_compound([
+                (k, 8, _nbt_string(v)) for k, v in props.items()
+            ])))
+        palette_payloads.append(_nbt_compound(entries))
+
+    root = [
+        ("size", 9, _nbt_int_list([w, h, d])),
+        ("entities", 9, _nbt_list(10, [])),
+        ("blocks", 9, _nbt_list(10, block_payloads)),
+        ("palette", 9, _nbt_list(10, palette_payloads)),
+        ("DataVersion", 3, struct.pack(">i", DATA_VERSION_1201)),
+    ]
+    # _nbt_compound ya cierra con TAG_End; no lleva byte extra al final.
+    raw = bytes([10]) + _nbt_string("") + _nbt_compound(root)
+    return gzip.compress(raw)
+
+
+def generate_structure():
+    print("Generando estructura de worldgen...")
+    os.makedirs(STRUCT_DATA, exist_ok=True)
+    path = os.path.join(STRUCT_DATA, "santuario.nbt")
+    with open(path, "wb") as fh:
+        fh.write(make_santuario_nbt())
+    print("  [ok] data/elsilente/structures/santuario.nbt (%d bytes)" % os.path.getsize(path))
+
+
 def main():
     ensure_dirs()
     generate_textures()
+    generate_structure()
     if "--textures-only" not in sys.argv:
         generate_sounds()
     print("Listo.")

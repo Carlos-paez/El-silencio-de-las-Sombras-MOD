@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "residuo=0": { "model": "elsilente:block/linea_sal_0" },
+    "residuo=1": { "model": "elsilente:block/linea_sal_1" },
+    "residuo=2": { "model": "elsilente:block/linea_sal_2" },
+    "residuo=3": { "model": "elsilente:block/linea_sal_3" }
+  }
+}

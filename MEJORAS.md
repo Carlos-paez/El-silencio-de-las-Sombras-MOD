@@ -1,6 +1,7 @@
 # 🌑 Propuestas de mejora — El Silente de las Sombras
 
-> **Estado:** propuesta, **pendiente de codificar**. Complementa a `DISENO.md` (Fases 1 y 2,
+> **Estado:** ronda 1 implementada (§1–§11 y defensas §7); pendientes solo
+> §12 GeckoLib y §13 Reino de sombras. Complementa a `DISENO.md` (Fases 1 y 2,
 > ya implementadas) con la siguiente ronda de mejoras. Todo pensado para el stack actual:
 > MC **1.20.1**, Forge **47.2.0**, Java 17, mod id `elsilente`.
 >
@@ -261,6 +262,23 @@ trabajo más grande del documento; solo después de §1–§7.
 
 ---
 
+## 14. 🎮 Pack de jugabilidad: entidades e items en el mundo
+
+Mejoras de sensación de juego sin dependencias nuevas, verificadas con
+`gradlew build` + `runClient`:
+
+| Pieza | Qué cambia |
+|---|---|
+| **Umbral: slam** | En Fase 2, cada 8 s (5 s enfurecido) golpea el suelo con 0,8 s de telegrado (almas + rugido grave): 6 HP + empuje + oscuridad en 5 b. |
+| **Umbral: enrage** | Al 25% de vida ruge, +27% de velocidad y slam más frecuente. |
+| **Zona segura del Trofeo** | El Silente no entra en 12 b alrededor de un Trofeo del Umbral (retirada con humo, sin teletransporte/apagar puertas/saltar dentro, no nace ahí); si el jugador está dentro, espera mirando en el borde. |
+| **Sombra: telegrafo** | Al acumular 8/10 HP muta a la vista: almas cada 0,5 s, susurro agudo y +velocidad hasta evolucionar. |
+| **Corazón Silente** | Uso activo: recupera 3 corazones consumiéndolo, +25 de presencia y programa una manifestación de El Silente en 60-150 s (5 min de enfriamiento). |
+| **Lámpara: destello** | Clic derecho: empuja las Sombras a 12 b con fogonazo (15 s de enfriamiento). |
+| **Guadaña: almas** | Mata con ella → 1 alma (máx. 5); llena, brilla y el próximo golpe libera +8 y un estallido de 4 a 5 b. |
+
+---
+
 ## ⚠️ Riesgos y comprobaciones comunes
 
 1. **Sincronía UV modelo ↔ script:** toda textura generada debe coincidir con el modelo
@@ -287,16 +305,24 @@ trabajo más grande del documento; solo después de §1–§7.
 **Prioridad 2**
 - [x] `PresenceHandler` (presencia por UUID, umbrales, fuentes)
 - [x] Alucinaciones client-side + niebla dinámica + vignette
-- [ ] Overlay de pesadilla al despertar
+- [x] Overlay de pesadilla al despertar (`NightmareFlashPacket` + `ClientNightmare`)
 
 **Prioridad 3**
 - [x] `SnuffLightGoal` (apagar antorchas) + config
 - [x] Rastro del botín (amuleto → Cofre del Silente)
 - [x] `ForgeConfigSpec` con claves de §6
-- [ ] Defensas con coste (sal, campana, Símbolo mejorado)
+- [x] Defensas con coste (sal, campana, Símbolo mejorado)
 
 **Prioridad 4**
-- [ ] Puertas + advancements/lore + música por fases
-- [ ] Estructura «Santuario del Silente»
+- [x] Puertas + advancements/lore + música por fases
+- [x] Estructura «Santuario del Silente»
 - [ ] GeckoLib (junto a §1)
 - [ ] Reino de las sombras (fase endgame)
+
+**§14 Pack de jugabilidad (entidades e items)**
+- [x] Umbral: slam con telegrado + enrage <25%
+- [x] Zona segura del Trofeo para El Silente
+- [x] Telegrafo de evolución de la Sombra Débil
+- [x] Corazón Silente con uso activo (riesgo/recompensa)
+- [x] Lámpara con destello activo
+- [x] Guadaña con carga de almas

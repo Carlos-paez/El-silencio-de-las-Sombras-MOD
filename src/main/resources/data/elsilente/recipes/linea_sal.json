@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SSS"
+  ],
+  "key": {
+    "S": { "item": "minecraft:sugar" }
+  },
+  "result": {
+    "item": "elsilente:linea_sal",
+    "count": 3
+  }
+}

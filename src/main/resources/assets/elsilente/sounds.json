@@ -1,42 +1,76 @@
 {
   "silente.heartbeat": {
     "category": "hostile",
+    "subtitle": "subtitles.elsilente.silente.heartbeat",
     "sounds": [ { "name": "elsilente:heartbeat", "stream": false } ]
   },
   "silente.whisper": {
     "category": "hostile",
-    "sounds": [ { "name": "elsilente:whisper", "stream": false } ]
+    "subtitle": "subtitles.elsilente.silente.whisper",
+    "sounds": [
+      { "name": "elsilente:whisper", "stream": false },
+      { "name": "elsilente:whisper2", "stream": false },
+      { "name": "elsilente:whisper3", "stream": false }
+    ]
   },
   "silente.scream": {
     "category": "hostile",
+    "subtitle": "subtitles.elsilente.silente.scream",
     "sounds": [ { "name": "elsilente:scream", "stream": false } ]
   },
   "silente.vanish": {
     "category": "hostile",
+    "subtitle": "subtitles.elsilente.silente.vanish",
     "sounds": [ { "name": "elsilente:vanish", "stream": false } ]
   },
   "silente.attack": {
     "category": "hostile",
+    "subtitle": "subtitles.elsilente.silente.attack",
     "sounds": [ { "name": "elsilente:attack", "stream": false } ]
   },
   "silente.chase": {
     "category": "hostile",
+    "subtitle": "subtitles.elsilente.silente.chase",
     "sounds": [ { "name": "elsilente:chase", "stream": false } ]
   },
   "silente.nightmare": {
     "category": "hostile",
+    "subtitle": "subtitles.elsilente.silente.nightmare",
     "sounds": [ { "name": "elsilente:nightmare", "stream": false } ]
   },
   "silente.shadow_idle": {
     "category": "neutral",
+    "subtitle": "subtitles.elsilente.silente.shadow_idle",
     "sounds": [ { "name": "elsilente:shadow_idle", "stream": false } ]
   },
   "silente.umbral_roar": {
     "category": "hostile",
+    "subtitle": "subtitles.elsilente.silente.umbral_roar",
     "sounds": [ { "name": "elsilente:umbral_roar", "stream": false } ]
   },
   "silente.umbral_summon": {
     "category": "hostile",
+    "subtitle": "subtitles.elsilente.silente.umbral_summon",
     "sounds": [ { "name": "elsilente:umbral_summon", "stream": false } ]
+  },
+  "silente.chase_loop": {
+    "category": "hostile",
+    "subtitle": "subtitles.elsilente.silente.chase_loop",
+    "sounds": [ { "name": "elsilente:chase_loop", "stream": true } ]
+  },
+  "silente.stalk_silence": {
+    "category": "hostile",
+    "subtitle": "subtitles.elsilente.silente.stalk_silence",
+    "sounds": [ { "name": "elsilente:stalk_silence", "stream": false } ]
+  },
+  "silente.cave_dread": {
+    "category": "ambient",
+    "subtitle": "subtitles.elsilente.silente.cave_dread",
+    "sounds": [ { "name": "elsilente:cave_dread", "stream": false } ]
+  },
+  "silente.claws": {
+    "category": "hostile",
+    "subtitle": "subtitles.elsilente.silente.claws",
+    "sounds": [ { "name": "elsilente:claws", "stream": false } ]
   }
 }

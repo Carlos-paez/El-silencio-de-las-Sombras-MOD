@@ -30,6 +30,8 @@ public class ModCreativeTabs {
                         output.accept(ModItems.GUADANA_SEGADOR.get());
                         output.accept(ModItems.LAMPARA_PENITENTE.get());
                         output.accept(ModBlocks.TROFEO_UMBRAL.get());
+                        output.accept(ModBlocks.LINEA_SAL.get());
+                        output.accept(ModItems.CAMPANA_VIGILIA.get());
                         output.accept(ModItems.EL_SILENTE_SPAWN_EGG.get());
                         output.accept(ModItems.SOMBRA_DEBIL_SPAWN_EGG.get());
                         output.accept(ModItems.UMBRAL_SPAWN_EGG.get());

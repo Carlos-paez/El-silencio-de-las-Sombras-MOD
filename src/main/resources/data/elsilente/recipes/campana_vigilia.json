@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:bell" },
+    { "item": "minecraft:soul_sand" },
+    { "item": "minecraft:soul_sand" }
+  ],
+  "result": {
+    "item": "elsilente:campana_vigilia",
+    "count": 1
+  }
+}

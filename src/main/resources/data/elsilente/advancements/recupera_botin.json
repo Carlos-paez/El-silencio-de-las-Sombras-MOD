@@ -1,0 +1,17 @@
+{
+  "parent": "elsilente:sombra_durmiente",
+  "display": {
+    "icon": { "item": "minecraft:chest" },
+    "title": { "translate": "advancements.elsilente.recupera_botin.title" },
+    "description": { "translate": "advancements.elsilente.recupera_botin.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "recuperado": { "trigger": "minecraft:impossible" }
+  },
+  "requirements": [ [ "recuperado" ] ],
+  "sends_telemetry_event": true
+}

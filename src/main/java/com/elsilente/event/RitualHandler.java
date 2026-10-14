@@ -110,6 +110,9 @@ public class RitualHandler {
         if (summoner != null) {
             boss.setTarget(summoner);
         }
+        // «Invoca al Umbral» (§9): el ritual se completó (owner es ServerPlayer
+        // por la comprobación del comienzo del método).
+        AdvancementHandler.award(owner, AdvancementHandler.INVOCA_UMBRAL, "invocado");
     }
 
     private static BlockPos findRitualCenter(ServerLevel level, BlockPos impact) {

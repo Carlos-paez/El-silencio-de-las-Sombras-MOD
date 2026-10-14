@@ -8,6 +8,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -54,6 +55,10 @@ public class TheftHandler {
         BlockPos stored = STOLEN_CHESTS.get(event.getEntity().getUUID());
         if (stored != null && stored.equals(event.getPos())) {
             STOLEN_CHESTS.remove(event.getEntity().getUUID());
+            // «Recupera el botín» (§9): recuperaste lo que El Silente te robó.
+            if (event.getEntity() instanceof ServerPlayer player) {
+                AdvancementHandler.award(player, AdvancementHandler.RECUPERA_BOTIN, "recuperado");
+            }
         }
     }
 

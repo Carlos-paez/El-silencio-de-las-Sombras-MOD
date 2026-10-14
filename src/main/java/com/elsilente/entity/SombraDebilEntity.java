@@ -2,6 +2,7 @@ package com.elsilente.entity;
 
 import com.elsilente.config.ElSilenteConfig;
 import com.elsilente.registry.ModEntities;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import com.elsilente.registry.ModItems;
 import com.elsilente.registry.ModSounds;
 import net.minecraft.core.BlockPos;
@@ -34,6 +35,7 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * SOMBRA DEBIL.
@@ -58,11 +60,17 @@ public class SombraDebilEntity extends PathfinderMob {
 
     /** HP que debe acumular sobre el jugador para mutar en El Silente. */
     private static final int DAMAGE_TO_EVOLVE = 10;
+    /** Aviso de mutacion: a partir de este acumulado telegrafa la evolucion (§14). */
+    private static final int EVOLVE_WARN = DAMAGE_TO_EVOLVE - 2;
     /** Enfriamiento entre mordiscos: 1 corazon cada 3 segundos. */
     private static final int ATTACK_COOLDOWN = 60;
 
+    private static final UUID EVOLVE_SPEED_ID =
+            UUID.fromString("6c1f0e2b-3a7d-4f5e-9b21-8d4e7a0c5f13");
+
     private int attackCooldown = ATTACK_COOLDOWN;
     private int idleTimer = 200;
+    private boolean speedBoosted = false;
 
     public SombraDebilEntity(EntityType<? extends SombraDebilEntity> type, Level level) {
         super(type, level);
@@ -142,6 +150,13 @@ public class SombraDebilEntity extends PathfinderMob {
         if (this.level().getMaxLocalRawBrightness(this.blockPosition()) >= 8) {
             dissipate();
         }
+        // Telegrafo de evolucion: almas asomando cuando esta a un mordisco
+        // de mutar en El Silente (§14). El jugador debe poder verlo venir.
+        if (getDamageDealt() >= EVOLVE_WARN && this.tickCount % 10 == 0
+                && this.level() instanceof ServerLevel server) {
+            server.sendParticles(ParticleTypes.SOUL, this.getX(), this.getY() + 0.5D,
+                    this.getZ(), 3, 0.3D, 0.4D, 0.3D, 0.01D);
+        }
     }
 
     /** La sombra se deshace (luz, Trofeo del Umbral, etc.). */
@@ -167,6 +182,21 @@ public class SombraDebilEntity extends PathfinderMob {
         }
         int dealt = getDamageDealt() + 2;
         setDamageDealt(dealt);
+        if (dealt >= EVOLVE_WARN && !speedBoosted) {
+            // Aviso de mutacion: se acelera, susurra agudo y suelta almas.
+            speedBoosted = true;
+            if (this.getAttribute(Attributes.MOVEMENT_SPEED) != null) {
+                this.getAttribute(Attributes.MOVEMENT_SPEED).addTransientModifier(
+                        new AttributeModifier(EVOLVE_SPEED_ID, "evolve_boost", 0.08D,
+                                AttributeModifier.Operation.ADDITION));
+            }
+            this.level().playSound(null, this.blockPosition(), ModSounds.SHADOW_IDLE.get(),
+                    SoundSource.NEUTRAL, 0.6F, 1.4F);
+            if (this.level() instanceof ServerLevel server) {
+                server.sendParticles(ParticleTypes.SOUL, this.getX(), this.getY() + 0.6D,
+                        this.getZ(), 16, 0.3D, 0.5D, 0.3D, 0.02D);
+            }
+        }
         if (dealt >= DAMAGE_TO_EVOLVE) {
             evolve(player);
         }
@@ -197,6 +227,10 @@ public class SombraDebilEntity extends PathfinderMob {
             return false;
         }
         Level world = level.getLevel();
+        // Linea de sal (§7): barrera anti-spawn que no afecta a emboscadas.
+        if (com.elsilente.util.SaltBarrier.isProtected(world, pos)) {
+            return false;
+        }
         Player nearest = world.getNearestPlayer(pos.getX(), pos.getY(), pos.getZ(), 48.0D, false);
         if (nearest == null) {
             return false;

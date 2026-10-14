@@ -31,6 +31,21 @@ public class AmbushHandler {
     private static final Map<UUID, Long> NEXT_CHECK = new HashMap<>();
     private static final Map<UUID, Long> NEXT_AMBUSH = new HashMap<>();
 
+    /**
+     * Emboscadas silenciadas por jugador hasta el proximo amanecer (Campana
+     * de vigilia, §7): la campana calla la noche... pero atrae sombras.
+     */
+    private static final Map<UUID, Long> AMBUSH_SILENCED_UNTIL = new HashMap<>();
+
+    /** Cancela la emboscada de esta noche para el jugador (llamado por la Campana). */
+    public static void silenceAmbush(ServerPlayer player) {
+        long now = player.level().getGameTime();
+        long hour = player.level().getDayTime() % 24000L;
+        // Hasta el proximo amanecer del ciclo (mas un margen de 600 t).
+        long remaining = 24000L - hour + 600L;
+        AMBUSH_SILENCED_UNTIL.put(player.getUUID(), now + remaining);
+    }
+
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
@@ -62,6 +77,12 @@ public class AmbushHandler {
             if (now - lastAmbush < cooldown) {
                 continue;
             }
+            // La Campana de vigilia puede haber callado la emboscada esta noche.
+            long silenced = AMBUSH_SILENCED_UNTIL.getOrDefault(player.getUUID(), 0L);
+            if (now < silenced) {
+                continue;
+            }
+            AMBUSH_SILENCED_UNTIL.remove(player.getUUID());
             // La presencia acumulada aumenta la probabilidad de emboscada (+50% al maximo).
             float presenceBoost = 1.0F + (PresenceHandler.getLevel(player) / (float) PresenceHandler.MAX) * 0.5F;
             if (player.getRandom().nextFloat() > Math.min(1.0F, chance * presenceBoost)) {

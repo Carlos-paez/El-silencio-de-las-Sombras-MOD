@@ -1,0 +1,11 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 881713,
+    "separation": 12,
+    "spacing": 30
+  },
+  "structures": [
+    { "structure": "elsilente:santuario", "weight": 1 }
+  ]
+}

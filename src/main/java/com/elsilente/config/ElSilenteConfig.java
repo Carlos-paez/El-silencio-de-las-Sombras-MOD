@@ -41,6 +41,14 @@ public final class ElSilenteConfig {
         // --- Presencia acumulativa (PresenceHandler + FX client) ---
         public final ForgeConfigSpec.BooleanValue presenceEnabled;
 
+        // --- La base deja de ser segura (abrir puertas al acechar) ---
+        public final ForgeConfigSpec.BooleanValue openDoorsEnabled;
+
+        // --- Defensas activas con coste (sal, campana, simbolo) ---
+        public final ForgeConfigSpec.BooleanValue saltEnabled;
+        public final ForgeConfigSpec.BooleanValue bellEnabled;
+        public final ForgeConfigSpec.IntValue symbolCharges;
+
         Common(ForgeConfigSpec.Builder builder) {
             builder.push("general");
 
@@ -75,6 +83,23 @@ public final class ElSilenteConfig {
             presenceEnabled = builder
                     .comment("Sistema de presencia acumulativa: escalada de susurros, niebla y alucinaciones.")
                     .define("presenceEnabled", true);
+
+            openDoorsEnabled = builder
+                    .comment("En fase STALK, El Silente abre las puertas de madera para cruzar hacia ti.")
+                    .define("openDoorsEnabled", true);
+
+            builder.pop();
+            builder.push("defenses");
+
+            saltEnabled = builder
+                    .comment("La Linea de sal bloquea el spawn natural de Sombras en su radio (no las emboscadas).")
+                    .define("saltEnabled", true);
+            bellEnabled = builder
+                    .comment("La Campana de vigilia cancela la emboscada de esa noche y atrae Sombras Debiles.")
+                    .define("bellEnabled", true);
+            symbolCharges = builder
+                    .comment("Cargas de luz del Simbolo del Alba (recarga con un Corazon Silente).")
+                    .defineInRange("symbolCharges", 3, 1, 9);
 
             builder.pop();
         }

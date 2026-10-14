@@ -26,5 +26,10 @@ public final class ModNetwork {
                 .decoder(PresenceSyncPacket::decode)
                 .consumerMainThread(PresenceSyncPacket::handle)
                 .add();
+        CHANNEL.messageBuilder(NightmareFlashPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(NightmareFlashPacket::encode)
+                .decoder(NightmareFlashPacket::decode)
+                .consumerMainThread(NightmareFlashPacket::handle)
+                .add();
     }
 }

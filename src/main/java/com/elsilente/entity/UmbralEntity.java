@@ -7,11 +7,13 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -20,6 +22,7 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
 
@@ -29,8 +32,10 @@ import java.util.List;
  * Limite entre el mundo de los mortales y el mundo de las sombras:
  *  - 300 HP con barra de jefe (ServerBossEvent).
  *  - FASE 1 (>50%): invoca Sombras Debiles (1 cada 5 s, maximo 4 vivas).
- *  - FASE 2 (<=50%): ademas invoca El Silente (1 cada 15 s, maximo 2) y
- *    recibe un 10% mas de dano por golpe.
+ *  - FASE 2 (<=50%): ademas invoca El Silente (1 cada 15 s, maximo 2),
+ *    recibe un 10% mas de dano por golpe y usa el GOLPE DE AREA (slam) con
+ *    telegrado de 0,8 s: empuje + oscuridad en 5 bloques.
+ *  - ENRAGE (<25%): rugido, +27% de velocidad y slam cada 5 s (antes 8 s).
  *  - Drops garantizados: Trofeo del Umbral y Guadana del Segador (loot table).
  *
  * Solo se invoca con el ritual de medianoche (RitualHandler).
@@ -45,6 +50,16 @@ public class UmbralEntity extends Monster {
     private int shadowSummonTimer = 100;
     private int silenteSummonTimer = 300;
     private boolean phaseTwoRoared = false;
+
+    // Golpe de area (solo Fase 2): enfriamiento, telegrado y estado.
+    private int slamCooldown = 100;
+    private int slamWindup = 0;
+    private boolean enraged = false;
+
+    /** Radio del slam (bloques). */
+    private static final double SLAM_RADIUS = 5.0D;
+    /** Vida en la que entra en rage (< 25%). */
+    private static final float ENRAGE_THRESHOLD = 0.25F;
 
     public UmbralEntity(EntityType<? extends UmbralEntity> type, Level level) {
         super(type, level);
@@ -103,10 +118,93 @@ public class UmbralEntity extends Monster {
                 this.phaseTwoRoared = true;
                 roar();
             }
+            if (!enraged && this.getHealth() <= this.getMaxHealth() * ENRAGE_THRESHOLD) {
+                enterEnrage();
+            }
             if (--this.silenteSummonTimer <= 0) {
                 this.silenteSummonTimer = 300;
                 summonSilente();
             }
+            tickSlam();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Golpe de area (Fase 2): telegrado de 0,8 s y onda de impacto.
+    // -------------------------------------------------------------------------
+
+    private void tickSlam() {
+        if (this.slamWindup > 0) {
+            // Aviso: almas subiendo alrededor del jefe durante el cargado.
+            if (--this.slamWindup == 0) {
+                slamStrike();
+            } else if (this.level() instanceof ServerLevel server && this.slamWindup % 3 == 0) {
+                server.sendParticles(ParticleTypes.SOUL, this.getX(), this.getY() + 0.2D,
+                        this.getZ(), 6, 1.2D, 0.6D, 1.2D, 0.02D);
+            }
+            return;
+        }
+        if (--this.slamCooldown > 0) {
+            return;
+        }
+        LivingEntity target = this.getTarget();
+        if (target == null || !target.isAlive() || this.distanceTo(target) > 6.0F) {
+            this.slamCooldown = 20;
+            return;
+        }
+        // Telegrado: rugido grave y recogida de almas antes del impacto.
+        this.slamWindup = 16;
+        this.level().playSound(null, this.blockPosition(), ModSounds.UMBRAL_ROAR.get(),
+                SoundSource.HOSTILE, 1.1F, 0.6F);
+        if (this.level() instanceof ServerLevel server) {
+            server.sendParticles(ParticleTypes.SOUL, this.getX(), this.getY() + 0.3D,
+                    this.getZ(), 16, 1.4D, 0.8D, 1.4D, 0.03D);
+        }
+    }
+
+    /** Onda de impacto: daño + empuje fuerte + oscuridad a 5 bloques. */
+    private void slamStrike() {
+        this.slamCooldown = enraged ? 100 : 160;
+        this.level().playSound(null, this.blockPosition(), SoundEvents.GENERIC_EXPLODE,
+                SoundSource.HOSTILE, 0.55F, 1.35F);
+        if (this.level() instanceof ServerLevel server) {
+            server.sendParticles(ParticleTypes.FLASH, this.getX(), this.getY() + 0.6D,
+                    this.getZ(), 2, 0.0D, 0.0D, 0.0D, 0.0D);
+            server.sendParticles(ParticleTypes.ASH, this.getX(), this.getY() + 0.4D,
+                    this.getZ(), 70, SLAM_RADIUS, 0.6D, SLAM_RADIUS, 0.05D);
+        }
+        for (Player player : this.level().getEntitiesOfClass(Player.class,
+                this.getBoundingBox().inflate(SLAM_RADIUS))) {
+            if (!player.isAlive() || player.isCreative() || player.isSpectator()) {
+                continue;
+            }
+            if (this.distanceTo(player) > SLAM_RADIUS + 1.0F) {
+                continue;
+            }
+            player.hurt(this.level().damageSources().mobAttack(this), 6.0F);
+            Vec3 away = player.position().subtract(this.position());
+            double horizontal = Math.max(1.0E-4D, Math.sqrt(away.x * away.x + away.z * away.z));
+            player.knockback(1.4D, away.x / horizontal, away.z / horizontal);
+            player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    net.minecraft.world.effect.MobEffects.DARKNESS, 60, 0));
+            if (this.level() instanceof ServerLevel server) {
+                server.sendParticles(ParticleTypes.SOUL, player.getX(), player.getY() + 1.0D,
+                        player.getZ(), 8, 0.3D, 0.5D, 0.3D, 0.02D);
+            }
+        }
+    }
+
+    /** Al 25% de vida: rugido, velocidad +27% y slam mas frecuente. */
+    private void enterEnrage() {
+        this.enraged = true;
+        this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.38D);
+        this.level().playSound(null, this.blockPosition(), ModSounds.UMBRAL_ROAR.get(),
+                SoundSource.HOSTILE, 1.6F, 0.75F);
+        if (this.level() instanceof ServerLevel server) {
+            server.sendParticles(ParticleTypes.LARGE_SMOKE, this.getX(), this.getY() + 1.2D,
+                    this.getZ(), 80, 0.8D, 1.2D, 0.8D, 0.05D);
+            server.sendParticles(ParticleTypes.CRIMSON_SPORE, this.getX(), this.getY() + 1.0D,
+                    this.getZ(), 40, 0.6D, 1.0D, 0.6D, 0.03D);
         }
     }
 

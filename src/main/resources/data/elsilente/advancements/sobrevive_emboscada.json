@@ -1,0 +1,18 @@
+{
+  "parent": "elsilente:sombra_durmiente",
+  "display": {
+    "icon": { "item": "elsilente:amuleto_latido" },
+    "title": { "translate": "advancements.elsilente.sobrevive_emboscada.title" },
+    "description": { "translate": "advancements.elsilente.sobrevive_emboscada.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "escapaste": { "trigger": "minecraft:impossible" },
+    "venciste": { "trigger": "minecraft:impossible" }
+  },
+  "requirements": [ [ "escapaste" ], [ "venciste" ] ],
+  "sends_telemetry_event": true
+}

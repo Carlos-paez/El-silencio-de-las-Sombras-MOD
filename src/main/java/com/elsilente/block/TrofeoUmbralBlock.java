@@ -12,7 +12,8 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Trofeo del Umbral: lampara-trofeo que repele Sombras Debiles (20 b) y
- * emite particulas negras mientras este cargada (chunk cargado).
+ * emite particulas negras mientras este cargada (chunk cargado). Tambien
+ * alimenta la ZONA SEGURA de El Silente (registro en onPlace/onRemove).
  */
 public class TrofeoUmbralBlock extends Block implements EntityBlock {
 
@@ -36,5 +37,21 @@ public class TrofeoUmbralBlock extends Block implements EntityBlock {
                 TrofeoUmbralBlockEntity.serverTick(lvl, pos, st, trofeo);
             }
         };
+    }
+
+    @Override
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
+        super.onPlace(state, level, pos, oldState, isMoving);
+        if (!state.is(oldState.getBlock())) {
+            TrofeoUmbralBlockEntity.track(level, pos);
+        }
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock())) {
+            TrofeoUmbralBlockEntity.untrack(level, pos);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
     }
 }

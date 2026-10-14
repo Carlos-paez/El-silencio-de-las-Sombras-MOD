@@ -26,6 +26,12 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> UMBRAL_ROAR = register("silente.umbral_roar");
     public static final RegistryObject<SoundEvent> UMBRAL_SUMMON = register("silente.umbral_summon");
 
+    // Mejoras: musica por fases + sonido ambiental + garras en las puertas
+    public static final RegistryObject<SoundEvent> CHASE_LOOP = register("silente.chase_loop");
+    public static final RegistryObject<SoundEvent> STALK_SILENCE = register("silente.stalk_silence");
+    public static final RegistryObject<SoundEvent> CAVE_DREAD = register("silente.cave_dread");
+    public static final RegistryObject<SoundEvent> CLAWS = register("silente.claws");
+
     private static RegistryObject<SoundEvent> register(String name) {
         return SOUNDS.register(name,
                 () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ElSilenteMod.MODID, name)));
