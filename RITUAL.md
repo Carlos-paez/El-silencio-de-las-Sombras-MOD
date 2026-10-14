@@ -74,10 +74,17 @@ Si la estructura es correcta ocurre, en este orden:
 
 - **El Umbral (300 HP)**: 12 de daño por golpe, no retrocede y **nunca se desvanece**.
 - **Fase 1 (>50 %)**: invoca **Sombras Débiles** (una cada 5 s, máximo 4 vivas).
-- **Fase 2 (≤50 %)**: ruge, invoca **El Silente** (una cada 15 s, máximo 2) y
-  **recibe un 10 % más de daño** por golpe.
-- **Drops garantizados**: **Trofeo del Umbral** (repele Sombras Débiles a 20 b) y
-  **Guadaña del Segador** (`Darkness` 5 s, +30 % de daño de noche).
+- **Fase 2 (≤50 %)**: ruge, invoca **El Silente** (una cada 15 s, máximo 2),
+  **recibe un 10 % más de daño** por golpe y usa el **slam**: cada 8 s golpea
+  el suelo con 0,8 s de telegrado (almas + rugido) causando 6 de daño, empuje
+  y `Darkness` a 5 bloques.
+- **Enrage (<25 %)**: rugido, +27 % de velocidad y slam cada 5 s.
+- **Drops garantizados**: **Trofeo del Umbral** (repele Sombras Débiles a 20 b,
+  y su **zona segura de 12 b** disuade a El Silente) y **Guadaña del Segador**
+  (`Darkness` 5 s, +30 % de daño de noche, carga de almas).
+- **La grieta del Umbral (§13)**: al morir, abre una **Grieta del Umbral**
+  junto a donde cayó. Písala para entrar en el **Reino de las Sombras**, la
+  dimensión de donde nacen los Corazones Silente (ver `GUIA.md`).
 
 ---
 
@@ -117,3 +124,5 @@ Si la estructura es correcta ocurre, en este orden:
   `[El Silente] Spawn natural de ... en N/64 biomas, peso ... por intento`.
 - **Emboscada** (`AmbushHandler`): de noche, con probabilidad periódica, se materializa
   a 8–12 bloques a tus espaldas y empieza a perseguirte.
+- **Reino de las Sombras**: en esa dimensión (abierta por la muerte del Umbral)
+  El Silente y sus **Silentes Verdaderos** nacen de forma natural en la oscuridad.

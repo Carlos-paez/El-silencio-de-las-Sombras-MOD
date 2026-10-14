@@ -1,7 +1,10 @@
 # 🌑 Diseño de expansión — El Silente de las Sombras (v1.1)
 
-> **Estado:** diseño aprobado, **pendiente de codificar**. Todo lo de este documento está
-> pensado para el stack actual: MC **1.20.1**, Forge **47.2.0**, Java 17, mod id `elsilente`.
+> **Estado:** Fases 1 y 2 **implementadas y superadas** por la ronda de
+> mejoras de `MEJORAS.md` (§1–§14 completas: presencia, alucinaciones,
+> GeckoLib, reino de sombras, pack de jugabilidad...). Este documento queda
+> como diseño histórico de la primera expansión. Guía de juego actualizada:
+> `GUIA.md`. Stack: MC **1.20.1**, Forge **47.2.0**, Java 17, mod id `elsilente`.
 > Fuente de inspiración: `El silencio de las sombras.md` (propuesta original).
 
 ## ✅ Decisiones ya tomadas

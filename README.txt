@@ -1,3 +1,13 @@
+EL SILENTE DE LAS SOMBRAS - documentacion del mod (espanol)
+---------------------------------------------------------
+Esta plantilla es solo para instalar el entorno de desarrollo de Forge.
+La documentacion del mod vive en la raiz del proyecto:
+  GUIA.md    - guia de juego: historia, progresion, items y jugabilidad
+  README.md  - resumen tecnico y lista de features
+  RITUAL.md  - manual del ritual de invocacion paso a paso
+  MEJORAS.md - historial de rondas de mejoras (todas implementadas)
+
+---
 
 Source installation information for modders
 -------------------------------------------

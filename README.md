@@ -2,6 +2,10 @@
 
 Mod de terror y acción para **Minecraft Java 1.20.1** sobre **Minecraft Forge 47.2.0+** (Java 17).
 
+> 📖 **[GUIA.md](GUIA.md)** — guía completa de **historia, progresión, jugabilidad e items**. Empieza por ahí si es la primera vez que juegas al mod.
+
+> **Dependencia requerida:** [**GeckoLib 4.4+**](https://www.curseforge.com/minecraft/mc-mods/geckolib) (`geckolib-forge-1.20.1`, se descarga solo con Forge). El renderizado de El Silente (modelos y animaciones) lo requiere.
+
 ---
 
 ## 📖 Descripción del Mod
@@ -44,6 +48,7 @@ Mod de terror y acción para **Minecraft Java 1.20.1** sobre **Minecraft Forge 4
    - **El Silente** aparece en biomas del Overworld con nivel de luz $\le 7$ (cualquier cueva u noche sin antorchas).
    - **Las Sombras Débiles** ($\texttt{elsilente:sombra\_debil}$) aparecen en zonas con luz $\le 7$ entre 16 y 48 bloques del jugador, **nunca a la vista directa** y con un máximo de **6 por jugador** (peso 50 por intento en 53/64 biomas).
    - Nunca aparece a la vista directa del jugador ni bajo la luz diurna del sol.
+   - **Reino de las Sombras**: en la llanura de ceniza nacen Sombras Débiles, El Silente y los **Silentes Verdaderos** (120 HP, 2 Corazones garantizados).
 2. **Emboscada Sorpresa (`AmbushHandler`)**:
    - De noche o en zonas oscuras, existe una probabilidad periódica de que se materialice repentinamente a espaldas del jugador (8–12 bloques) entrando directamente en fase CHASE con jumpscare de grito.
 3. **Ritual de Invocación (`RitualHandler`)** — invoca al jefe **El Umbral**:
@@ -59,8 +64,9 @@ Mod de terror y acción para **Minecraft Java 1.20.1** sobre **Minecraft Forge 4
 ## 💎 Items y Crafteos
 
 ### Corazón Silente (`elsilente:corazon_silente`)
-- Drop garantizado al derrotar a El Silente (además de posibles Perlas de Ender).
-- Esencia requerida para la forja de amuletos protectores.
+- Drop garantizado al derrotar a El Silente (además de posibles Perlas de Ender). El Silente Verdadero del Reino suelta **2**.
+- **Uso activo (clic derecho)**: recupera **3 corazones** consumiéndolo, pero sube la presencia **+25** y programa la aparición de un El Silente en 60–150 s (enfriamiento 5 min). *Es SU corazón.*
+- Esencia requerida para el ritual, el Símbolo del Alba y el Amuleto del Latido.
 
 ### Amuleto del Latido (`elsilente:amuleto_latido`)
 - Crafteo en mesa de trabajo:
@@ -80,6 +86,7 @@ Mod de terror y acción para **Minecraft Java 1.20.1** sobre **Minecraft Forge 4
 
 ### Símbolo del Alba (`elsilente:simbolo_alba`)
 - **Único arma** capaz de dañar a las Sombras Débiles (todo lo demás les resulta inútil). Daño **6**.
+- **Cargas de luz** (3 por defecto): golpe contra El Silente → +6 de daño (1 carga); clic derecho → **pulso de alba** que disipa Sombras a 12 b (1 carga); agachado + clic → recarga total con un Corazón Silente.
 - Suelta partículas de ceniza mientras está empuñado y se repara con obsidiana.
 - 🛠️ Crafteo:
   ```
@@ -104,7 +111,7 @@ Un medidor invisible (0–100, sincronizado al cliente) mide cuánto te ha notad
 
 - **Sube** con emboscadas (+20), pesadillas al despertar (+20) y noches a oscuras (+2 cada 10 s).
 - **Baja** con la luz (−2 cada 10 s) y durmiendo sin incidentes (−10).
-- **Efectos**: con presencia alta la niebla se espesa (hasta 40 %), aparecen **alucinaciones** (susurros y humo falsos detrás del jugador, solo visuales) y los bordes de la pantalla se oscurecen (vignette). La probabilidad de emboscada sube hasta +50 %.
+- **Efectos**: niebla más espesa desde **30** (hasta +40 %), **alucinaciones** desde **40** (susurros y humo falsos detrás del jugador, solo visuales), vignette desde **60** y probabilidad de emboscada **+50 % al máximo**. Usar un Corazón Silente sube la presencia +25.
 
 ---
 
@@ -120,13 +127,58 @@ Todo lo ajustable se genera con Forge en `config/elsilente-common.toml`:
 | `general.theftEnabled` | `true` | Activa el robo de botín. |
 | `general.snuffLightsEnabled` | `true` | El Silente apaga las luces cercanas en STALK. |
 | `spawns.maxShadowsPerPlayer` | `6` | Cupo de Sombras Débiles por jugador. |
-| `presence.enabled` | `true` | Sistema de presencia acumulativa. |
+| `presence.presenceEnabled` | `true` | Sistema de presencia acumulativa. |
+| `presence.openDoorsEnabled` | `true` | El Silente abre puertas de madera al acechar (§8). |
+| `defenses.saltEnabled` | `true` | Línea de sal activa (§7). |
+| `defenses.bellEnabled` | `true` | Campana de vigilia activa (§7). |
+| `defenses.symbolCharges` | `3` | Cargas de luz del Símbolo del Alba. |
+| `endgame.realmEnabled` | `true` | La muerte del Umbral abre la Grieta al Reino de las Sombras. |
+
+---
+
+## 🌀 Reino de las Sombras (fase endgame)
+
+La derrota del Umbral ya no agota el contenido: su muerte abre una **Grieta del Umbral** (bloque `elsilente:portal_umbral`) junto al lugar donde cayó, con un aviso para los jugadores cercanos.
+
+- **Cruzar**: basta con **pisar la grieta** (no tiene colisión). Guarda tu posición de retorno y te lleva a `elsilente:reino_sombras`, una dimensión propia: eterna noche, sin cielo, niebla violacea densa en todo momento y terreno de ceniza (`llanura_ceniza`).
+- **Al llegar** se coloca una Grieta de vuelta a tu lado; ambos sentidos se usan pisándolos (con 10 s de enfriamiento para evitar rebotes).
+- **Fuente de Corazones Silente**: el reino es su hogar. Los **Silentes Verdaderos** (`elsilente:silente_verdadero`) solo nacen ahí: la versión «verdadera» del jefe (120 HP, 14 de daño, 0,36 de velocidad) que suelta **2 Corazones Silente** garantizados.
+- También acechan **El Silente** y **Sombras Débiles** en la oscuridad del reino.
+- **Advancements**: *«Cruzaste el Umbral»* y *«Le arrancaste su Corazón»*.
+- Se puede desactivar con `endgame.realmEnabled=false`.
 
 ---
 
 ## 🕯️ Luces apagadas (`SnuffLightGoal`)
 
 En fase STALK, si no le estás mirando, El Silente se desplaza hasta una **antorcha, linterna, vela u hoguera** cercana (≤ 12 b) y la extingue con un soplido de humo antes de continuar el acecho. Tu base deja de ser un refugio seguro: hay que mantener las luces y vigilar las sombras.
+
+---
+
+## 🚪 La base deja de ser segura (`OpenDoorGoal`)
+
+Complemento del apagado de luces: si no hay línea de visión con el jugador y hay una **puerta de madera cerrada** cerca, El Silente camina hasta ella, la abre con un **rasgado de garras** y la cruza hacia tu lado. Cooldown por entidad para evitar el taladro de puertas; configurable (`presence.openDoorsEnabled`).
+
+---
+
+## 🛡️ Defensas activas con coste (§7)
+
+- **Línea de sal** (`elsilente:linea_sal`, 3 azúcares → 3): cojinete que bloquea el **spawn natural** de Sombras en un radio de **12 b** (±10 vertical). No detiene emboscadas y se consume con el tiempo/la lluvia.
+- **Campana de vigilia** (`elsilente:campana_vigilia`, campana + 2 arena de almas): clic derecho → cancela la **emboscada de esa noche**, pero atrae **1–2 Sombras Débiles** esa misma noche (enfriamiento 5 min). El bronce también llama.
+
+---
+
+## 🏚️ Santuario del Silente (§11)
+
+Estructura de worldgen en el Overworld: ruinas 9×3×9 con altar de tierra de almas agrietada, lápida, **lectern con «El diario del Vigía»** (lore que explica el ritual y las debilidades) y un cofre con **Corazón Silente + piezas del ritual**. Descubrimiento en exploración, no solo combate.
+
+---
+
+## 🎵 Música y sonido ambiental (§10)
+
+- **Loop de persecución** (`chase_loop`, `stream: true`) que arranca con el grito y frena al desvanecerse.
+- **Silencio antes del ataque** (`stalk_silence`): suppressión breve del ambiente al entrar en STALK a < 10 b.
+- **Bucle de cueva** (`cave_dread`) reactivo a la presencia, susurros con versiones estéreo y garras en las puertas. Todo generado proceduralmente (`scripts/generate_assets.py`).
 
 ---
 
@@ -139,18 +191,14 @@ Invocado con el ritual de medianoche (o `/summon elsilente:umbral`).
 | Vida | 300 HP · barra de jefe morada |
 | Daño / velocidad | 12 por golpe · 0,30 · sin retroceso |
 | Fase 1 (>50 %) | Invoca **Sombras Débiles** (1 cada 5 s, máx. 4 vivas) |
-| Fase 2 (≤50 %) | Ruge, invoca **El Silente** (1 cada 15 s, máx. 2) y recibe **+10 % de daño** |
-| Drops (100 %) | **Trofeo del Umbral** + **Guadaña del Segador** |
+| Fase 2 (≤50 %) | Ruge, invoca **El Silente** (1 cada 15 s, máx. 2), recibe **+10 % de daño** y usa el **slam** (telegrado 0,8 s: 6 de daño + empuje + oscuridad a 5 b) |
+| Enrage (<25 %) | Rugido, +27 % de velocidad y slam cada 5 s (antes 8 s) |
+| Drops (100 %) | **Trofeo del Umbral** + **Guadaña del Segador**. Su muerte abre la **Grieta del Umbral** (§13) |
 
 ### Botín y utilidades
-- **Trofeo del Umbral** (`elsilente:trofeo_umbral`, bloque): emite ceniza, ilumina (nivel 8) y **disipa toda Sombra Débil a 20 bloques**.
-- **Guadaña del Segador** (`elsilente:guadana_segador`): daño 9, aplica **`Darkness` 5 s** y hace **+30 % de daño de noche**.
-- **Lámpara del Penitente** (`elsilente:lampara_penitente`): mientras la lleves **repele a las Sombras Débiles a 8 bloques**. Crafteo:
-  ```
-  [ Oro ] [ Cian ] [ Oro ]
-  [ Hierro ] [Lámpara de almas] [ Hierro ]
-     -        [ Oro ]        -
-  ```
+- **Trofeo del Umbral** (`elsilente:trofeo_umbral`, bloque): emite ceniza, ilumina (nivel 8), **disipa toda Sombra Débil a 20 bloques** y crea una **zona segura de 12 b**: El Silente no entra (se retira con humo) ni nace dentro.
+- **Guadaña del Segador** (`elsilente:guadana_segador`): daño 9, aplica **`Darkness` 5 s** y hace **+30 % de daño de noche**. **Carga de almas**: 1 por criatura muerta (máx. 5); llena, el próximo golpe libera **+8 de daño** y un estallido de **4 a 5 bloques** (y la guadaña brilla).
+- **Lámpara del Penitente** (`elsilente:lampara_penitente`): mientras la lleves **repele a las Sombras Débiles a 8 bloques**; clic derecho → **destello** que las empuja a 12 b (enfriamiento 15 s). Sin receta: creativo (ruinas en el futuro).
 
 ---
 
@@ -187,6 +235,12 @@ Invocado con el ritual de medianoche (o `/summon elsilente:umbral`).
   /give @p elsilente:el_silente_spawn_egg
   /give @p elsilente:sombra_debil_spawn_egg
   /give @p elsilente:umbral_spawn_egg
+  /give @p elsilente:silente_verdadero_spawn_egg
+  /give @p elsilente:portal_umbral
+  ```
+- **Viajar al reino de las sombras**:
+  ```mcfunction
+  /execute in elsilente:reino_sombras run tp @p 0 100 0
   ```
 - **Invocar entidades**:
   ```mcfunction

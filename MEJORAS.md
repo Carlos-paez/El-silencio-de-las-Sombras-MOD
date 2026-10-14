@@ -1,8 +1,9 @@
 # 🌑 Propuestas de mejora — El Silente de las Sombras
 
-> **Estado:** ronda 1 implementada (§1–§11 y defensas §7); pendientes solo
-> §12 GeckoLib y §13 Reino de sombras. Complementa a `DISENO.md` (Fases 1 y 2,
-> ya implementadas) con la siguiente ronda de mejoras. Todo pensado para el stack actual:
+> **Estado:** TODO IMPLEMENTADO (§1–§14). La ronda 2 cerró con §12 GeckoLib 4
+> (modelo geo + animaciones de El Silente y capa emisiva de ojos sobre GeckoLib)
+> y §13 Reino de sombras (dimensión propia + Grieta del Umbral + Silente
+> Verdadero como fuente de Corazones). Complementa a `DISENO.md` (Fases 1 y 2). Stack actual:
 > MC **1.20.1**, Forge **47.2.0**, Java 17, mod id `elsilente`.
 >
 > Objetivo: pasar de *eventos de terror sueltos* a una **experiencia de terror sostenida**:
@@ -316,8 +317,13 @@ Mejoras de sensación de juego sin dependencias nuevas, verificadas con
 **Prioridad 4**
 - [x] Puertas + advancements/lore + música por fases
 - [x] Estructura «Santuario del Silente»
-- [ ] GeckoLib (junto a §1)
-- [ ] Reino de las sombras (fase endgame)
+- [x] GeckoLib 4.4.9 (junto a §1): `ElSilenteGeoModel` + `el_silente.geo.json` +
+      animaciones (stalk/stalk_walk/chase_idle/chase_walk/attack) + capa emisiva
+      de ojos con `GeoRenderLayer` y `RenderType.eyes` (blanco STALK / rojo CHASE)
+- [x] Reino de las sombras (fase endgame): dimensión `elsilente:reino_sombras`
+      (datapack + `ReinoSombrasEffects`), Grieta del Umbral (portal al pisar,
+      ida/vuelta con posición de retorno en NBT) y Silente Verdadero
+      (120 HP, 2 Corazones garantizados, spawns del bioma `llanura_ceniza`)
 
 **§14 Pack de jugabilidad (entidades e items)**
 - [x] Umbral: slam con telegrado + enrage <25%
