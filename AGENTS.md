@@ -45,7 +45,9 @@
 - Keep comments, log strings, docs and tooltips in Spanish. Keep the three lang files in sync: `assets/elsilente/lang/es_es.json`, `es_ve.json` and `en_us.json`.
 - Prefer unicode escapes (e.g. `\u00c9l`) over raw accented literals in `.java` to avoid encoding issues.
 - `build/`, `run/`, `.gradle/` are gitignored dev/output and must not be edited; `run/` holds a dev world save and logs used for debugging.
+- `.gitattributes` pins `src/generated/**/*.json` and the datagen `.cache/cache` to `eol=lf` — keep generated/data JSON as LF and don't let line-ending flips leak into commits.
 - `changelog.txt` is the upstream Forge changelog, not this mod's history.
+- Work lands directly on `main`; commit messages are in **Spanish** with no Conventional Commits prefix (see `git log`).
 - **`util/SaltBarrier` is in-memory only**: positions are registered from `LineaSalBlock.onPlace/onRemove` and cleared on `ServerStoppingEvent`; there is **no rebuild on world/chunk load**, so pre-existing Línea de sal stops blocking natural spawns after a world or server reload until re-placed. Relevant if you touch salt/spawn code.
 - Mob natural spawns are gated only in `MobSpawnType.NATURAL` `checkSpawnRules`; eggs, commands and ambush/`PENDING_SPAWNS` bypass them by design.
 - **GeckoLib + `runClient` (importante)**: GeckoLib 4.4.9 incluye un mixin (`TextureManagerMixin`) cuyo refmap traduce `getTexture`→SRG `m_118506_`. En el entorno dev (official/Mojmap) ese método ya se llama `getTexture`, así que aplicar el refmap crashea en "Initializing game" (issue bernie-g/geckolib#746). El fix —ya aplicado en `build.gradle`— es `property 'mixin.env.disableRefMap', 'true'` en el run config `client`. **No lo quites**: solo afecta al run dev; el jar de producción sigue usando el refmap con normalidad.
