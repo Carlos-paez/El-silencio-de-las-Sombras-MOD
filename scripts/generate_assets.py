@@ -600,38 +600,58 @@ def make_sombra():
 
 
 def make_simbolo_alba():
-    """Hoja de obsidiana con el corazon palido en la empuñadura (16x16)."""
-    img = Image.new("RGBA", (16, 16), COL_TRANSPARENT)
-    px = img.load()
-    obsidian = (46, 34, 74, 255)
-    obsidian_hi = (108, 86, 156, 255)
-    edge = (18, 12, 30, 255)
-    guard = (154, 122, 62, 255)
-    guard_hi = (226, 196, 122, 255)
-    handle = (86, 66, 44, 255)
-    glow = (255, 246, 232, 255)
+    """Simbolo del Alba (64x64): hoja de obsidiana con el corazon palido.
 
-    # Hoja (x7-8, y1-10) con filo iluminado a la izquierda.
-    for y in range(1, 11):
-        _fill(px, 7, y, 9, y + 1, obsidian)
-        px[7, y] = obsidian_hi
-        px[9 - 1, y] = obsidian
-    _fill(px, 7, 0, 9, 1, obsidian_hi)
-    px[8, 0] = obsidian_hi
-    px[6, 10] = edge
-    px[9, 10] = edge
+    Filo iluminado a la izquierda, gavilan dorado con pomos, empuñadura
+    envuelta en cuero y un corazon incrustado que resplandece.
+    """
+    def paint(x, y, img, size):
+        # Hoja: doble filo que se estrecha hasta la punta.
+        t = np.clip((y + 0.43) / 0.40, 0.0, 1.0)
+        halfw = 0.006 + 0.072 * t ** 0.85
+        blade = np.maximum(np.abs(x) - halfw, np.maximum(-0.43 - y, y + 0.02))
+        bcov, bluz = _shade(blade, size, bevel=0.040)
+        # Obsidiana: filo claro a la izquierda, lomo oscuro a la derecha.
+        left = _sstep(0.030, 0.0, halfw + x)
+        right = _sstep(0.030, 0.0, halfw - x)
+        fuller = _sstep(0.028, 0.010, np.abs(x)) * bcov  # canal central
+        bcol = np.array((0.345, 0.265, 0.520), np.float32) * bluz[..., None]
+        bcol = bcol + np.array((0.420, 0.380, 0.560), np.float32) * left[..., None] * 0.55
+        bcol = bcol * (1.0 - 0.45 * right)[..., None]
+        bcol = bcol * (1.0 - 0.35 * fuller)[..., None]
+        _over(img, np.clip(bcol, 0.0, 1.0), bcov)
+        # Punta con alma de luz.
+        _add(img, (0.90, 0.88, 1.00),
+             np.exp(-((x ** 2 + (y + 0.40) ** 2) / 0.0022)) * 0.90 * bcov)
 
-    # Gavilan con el simbolo (corazon tenue).
-    _fill(px, 4, 11, 12, 12, guard)
-    for x in (4, 5, 10, 11):
-        px[x, 11] = guard_hi
-    for (x, y) in ((6, 11), (7, 11), (9, 11), (10, 11), (8, 12)):
-        px[x, y] = glow
+        # Gavilan dorado con pomos esfericos.
+        bar = _sd_box(x, y, 0.0, -0.005, 0.255, 0.030, 0.018)
+        poms = np.minimum(_sd_disc(x, y, -0.285, -0.005, 0.048),
+                          _sd_disc(x, y, 0.285, -0.005, 0.048))
+        guard = np.minimum(bar, poms)
+        gcov, gluz = _shade(guard, size, bevel=0.028)
+        facet = 0.90 + 0.12 * np.cos(x * 40.0)
+        _over(img, np.array((0.900, 0.700, 0.260), np.float32) * (gluz * facet)[..., None], gcov)
+        _add(img, (1.00, 0.94, 0.70),
+             np.exp(-(((x + 0.26) ** 2 + (y + 0.03) ** 2) / 0.0035)) * 0.75 * gcov)
 
-    # Empuñadura.
-    _fill(px, 7, 12, 9, 16, handle)
-    _fill(px, 7, 15, 9, 16, (58, 44, 30, 255))
-    return img
+        # Corazon palido incrustado en el gavilan.
+        gem = _heart_field(x, y + 0.005, size, 0.052, 0.0)
+        gemc = np.clip(0.5 - gem * size, 0.0, 1.0)
+        _over(img, (0.96, 0.86, 0.86), gemc * 0.95)
+        _add(img, (1.00, 0.80, 0.78), np.exp(-((x ** 2 + (y + 0.01) ** 2) / 0.0016)) * 0.80)
+
+        # Empunadura de cuero con vueltas y pomo dorado.
+        grip = _sd_box(x, y, 0.0, 0.140, 0.050, 0.125, 0.020)
+        gyc, glz = _shade(grip, size, bevel=0.022)
+        wrap = 0.80 + 0.28 * np.abs(np.sin((y - 0.14) * 78.0))
+        _over(img, np.array((0.330, 0.240, 0.150), np.float32) * (glz * wrap)[..., None], gyc)
+        pommel = _sd_disc(x, y, 0.0, 0.290, 0.058)
+        pcov, pluz = _shade(pommel, size, bevel=0.025)
+        _over(img, np.array((0.880, 0.680, 0.250), np.float32) * pluz[..., None], pcov)
+        _add(img, (1.00, 0.95, 0.75),
+             np.exp(-(((x + 0.025) ** 2 + (y - 0.265) ** 2) / 0.0012)) * 0.80 * pcov)
+    return _render_item(paint)
 
 
 def make_umbral():
@@ -681,45 +701,108 @@ def make_umbral():
 
 
 def make_guadana():
-    """Guadaña del Segador: hoja curva de obsidiana y asta larga (16x16)."""
-    img = Image.new("RGBA", (16, 16), COL_TRANSPARENT)
-    px = img.load()
-    blade = (58, 44, 92, 255)
-    blade_hi = (140, 116, 196, 255)
-    edge = (230, 226, 245, 255)
-    pole = (74, 56, 38, 255)
-    pole_hi = (112, 86, 58, 255)
-    for y in range(3, 16):
-        _fill(px, 8, y, 10, y + 1, pole)
-        px[8, y] = pole_hi
-    for (x, y) in ((3, 2), (4, 2), (5, 3), (6, 3), (7, 4), (6, 4), (5, 4), (4, 3),
-                   (3, 3), (2, 3), (2, 2), (2, 1)):
-        px[x, y] = blade
-    for (x, y) in ((3, 1), (4, 1), (5, 2), (6, 2), (7, 3)):
-        px[x, y] = edge
-    for (x, y) in ((5, 4), (6, 5), (7, 5)):
-        px[x, y] = blade_hi
-    _fill(px, 7, 3, 10, 4, pole_hi)
-    return img
+    """Guadaña del Segador (64x64): hoja curva de obsidiana con filo de almas.
+
+    Asta nudosa a la derecha, media luna curva a la izquierda y el filo
+    (arco interior) brillando en cian con luz aditiva de almas.
+    """
+    def paint(x, y, img, size):
+        # Asta de madera vertical con grano y nudos.
+        pole = _sd_box(x, y, 0.26, 0.06, 0.042, 0.42, 0.025)
+        pcov, pluz = _shade(pole, size, bevel=0.030)
+        grain = 0.88 + 0.18 * np.sin(y * 62.0 + np.sin(x * 26.0) * 1.6)
+        _over(img, np.array((0.365, 0.270, 0.170), np.float32) * (pluz * grain)[..., None], pcov)
+        knots = None
+        for ky in (-0.14, 0.08, 0.29):
+            k = _sd_disc(x, y, 0.26, ky, 0.028)
+            knots = k if knots is None else np.minimum(knots, k)
+        kcov, kluz = _shade(knots, size, bevel=0.018)
+        _over(img, np.array((0.200, 0.140, 0.085), np.float32) * kluz[..., None], kcov * 0.85)
+
+        # Hoja en media luna: banda de arco con punta fina a la izquierda.
+        ccx, ccy, R = 0.30, 0.34, 0.68
+        rad = np.sqrt((x - ccx) ** 2 + (y - ccy) ** 2)
+        t = np.clip((np.degrees(np.arctan2(y - ccy, x - ccx)) % 360.0 - 188.0) / 72.0, 0.0, 1.0)
+        halfw = 0.012 + 0.085 * t ** 0.8
+        band = np.abs(rad - R) - halfw
+        # Cortes rectos en la punta (188°) y en el asta (260°).
+        dt = (np.cos(np.radians(188.0)), np.sin(np.radians(188.0)))
+        pt = (ccx + R * dt[0], ccy + R * dt[1])
+        tt = (-dt[1], dt[0])  # tangente hacia dentro de la hoja
+        cut_tip = -((x - pt[0]) * tt[0] + (y - pt[1]) * tt[1])
+        da = (np.cos(np.radians(260.0)), np.sin(np.radians(260.0)))
+        pa = (ccx + R * da[0], ccy + R * da[1])
+        ta = (-da[1], da[0])
+        cut_att = (x - pa[0]) * ta[0] + (y - pa[1]) * ta[1]
+        blade = np.maximum(band, np.maximum(cut_tip, cut_att))
+        bcov, bluz = _shade(blade, size, bevel=0.050)
+        # Obsidiana: lomo oscuro hacia el exterior del arco + veteado fino.
+        spine = _sstep(-0.02, 0.05, rad - R)
+        vetro = 0.90 + 0.16 * np.sin((rad - R) * 90.0 + t * 9.0)
+        bcol = (np.array((0.300, 0.230, 0.450), np.float32) -
+                np.array((0.150, 0.120, 0.190), np.float32) * spine[..., None]) * (bluz * vetro)[..., None]
+        _over(img, np.clip(bcol, 0.0, 1.0), bcov)
+
+        # Filo de almas: linea cian viva sobre el arco interior + halo.
+        edge = np.exp(-((rad - (R - halfw + 0.012)) ** 2) / 0.00022) * bcov
+        _add(img, (0.55, 1.00, 0.90), edge * 0.85)
+        _add(img, (0.25, 0.60, 0.55),
+             np.exp(-((rad - (R - halfw)) ** 2) / 0.0016) * bcov * 0.55)
+
+        # Collar metalico donde la hoja se une al asta.
+        collar = _sd_box(x, y, 0.20, -0.30, 0.080, 0.028, 0.015)
+        ccov2, cluz2 = _shade(collar, size, bevel=0.020)
+        _over(img, np.array((0.560, 0.520, 0.470), np.float32) * cluz2[..., None], ccov2)
+    return _render_item(paint)
 
 
 def make_lampara():
-    """Lampara del Penitente: linterna de almas con nucleo cian (16x16)."""
-    img = Image.new("RGBA", (16, 16), COL_TRANSPARENT)
-    px = img.load()
-    frame = (48, 44, 40, 255)
-    frame_hi = (96, 88, 78, 255)
-    core = (140, 255, 230, 255)
-    core_hi = (230, 255, 248, 255)
-    _fill(px, 7, 0, 9, 2, frame)
-    _fill(px, 5, 2, 11, 3, frame_hi)
-    _fill(px, 5, 13, 11, 14, frame)
-    for y in range(3, 13):
-        _fill(px, 5, y, 6, y + 1, frame)
-        _fill(px, 10, y, 11, y + 1, frame)
-    _fill(px, 6, 3, 10, 13, core)
-    _fill(px, 7, 4, 9, 7, core_hi)
-    return img
+    """Lampara del Penitente (64x64): linterna de hierro con un alma dentro.
+
+    Marco con esquinas reforzadas y remaches, cristal traslucido y un alma
+    cian que derrama luz por las juntas.
+    """
+    def paint(x, y, img, size):
+        # Cristal y alma (van detras del marco).
+        body = _sd_box(x, y, 0.0, 0.045, 0.245, 0.245, 0.035)
+        window = _sd_box(x, y, 0.0, 0.045, 0.160, 0.175, 0.030)
+        gcov = np.clip(0.5 - window * size, 0.0, 1.0)
+        gd = np.sqrt(x ** 2 + (y - 0.045) ** 2)
+        glass = np.array((0.240, 0.480, 0.440), np.float32) * (1.0 - 0.45 * np.clip(gd * 1.8, 0, 1))[..., None]
+        _over(img, glass, gcov * 0.80)
+
+        # Alma encerrada: cabeza + cola ondulante.
+        head = _sd_disc(x, y, 0.0, 0.005, 0.055)
+        tail = _sd_polyline(x, y, [(0.0, 0.05), (0.018, 0.11), (-0.012, 0.17)], 0.028)
+        soul = np.minimum(head, tail)
+        scov = np.clip(0.5 - soul * size, 0.0, 1.0)
+        _over(img, (0.78, 1.00, 0.93), scov)
+        _add(img, (0.45, 1.00, 0.88), np.exp(-(gd ** 2) / 0.030) * 0.55 * gcov)
+        _add(img, (0.85, 1.00, 0.96), np.exp(-(gd ** 2) / 0.0022) * 0.85 * scov)
+
+        # Brillo diagonal del cristal.
+        streak = _sd_polyline(x, y, [(-0.10, -0.10), (-0.045, 0.15)], 0.012)
+        _over(img, (0.85, 0.98, 0.95), np.clip(0.5 - streak * size, 0.0, 1.0) * gcov * 0.30)
+
+        # Marco de hierro: caja con ventana, tapa, base, asa y remaches.
+        frame = np.maximum(body, -window)
+        cap = _sd_box(x, y, 0.0, -0.245, 0.245, 0.045, 0.020)
+        base = _sd_box(x, y, 0.0, 0.335, 0.275, 0.045, 0.018)
+        ring = np.abs(_sd_disc(x, y, 0.0, -0.395, 0.070)) - 0.016
+        neck = _sd_box(x, y, 0.0, -0.315, 0.045, 0.035, 0.010)
+        frame = np.minimum(frame, np.minimum(cap, base))
+        frame = np.minimum(frame, np.minimum(ring, neck))
+        fcov, fluz = _shade(frame, size, bevel=0.030)
+        iron = 0.88 + 0.20 * np.sin(x * 40.0 + y * 8.0)
+        _over(img, np.array((0.295, 0.275, 0.250), np.float32) * (fluz * iron)[..., None], fcov)
+
+        rivets = None
+        for (rx, ry) in ((-0.195, -0.155), (0.195, -0.155), (-0.195, 0.245), (0.195, 0.245)):
+            r = _sd_disc(x, y, rx, ry, 0.024)
+            rivets = r if rivets is None else np.minimum(rivets, r)
+        rcov, rluz = _shade(rivets, size, bevel=0.015)
+        _over(img, np.array((0.480, 0.450, 0.410), np.float32) * rluz[..., None], rcov)
+    return _render_item(paint)
 
 
 def make_trofeo():
@@ -821,121 +904,271 @@ def make_portal_umbral():
 
 
 def make_campana_vigilia():
-    """Campana de vigilia (16x16): bronce agrietado con badajo de hueso."""
-    rng = np.random.default_rng(103)
-    img = Image.new("RGBA", (16, 16), COL_TRANSPARENT)
-    px = img.load()
-    bronze = (146, 104, 48, 255)
-    bronze_hi = (214, 168, 92, 255)
-    bronze_lo = (94, 66, 30, 255)
-    crack = (58, 40, 18, 255)
-    bone = (226, 222, 206, 255)
-    # Asa.
-    for (x, y) in ((7, 0), (8, 0), (6, 1), (9, 1)):
-        px[x, y] = bronze_hi
-    # Cuerpo de la campana (panza ancha, borde inferior).
-    body = ((2, 11, 14, 3), (3, 9, 13, 4), (4, 6, 12, 6), (5, 3, 11, 9))
-    for (x0, y0, x1, y1) in body:
-        _fill(px, x0, y0, x1, y1, bronze)
-    # Borde inferior y sombra derecha.
-    _fill(px, 2, 11, 14, 13, bronze_lo)
-    _fill(px, 11, 6, 12, 11, bronze_lo)
-    _fill(px, 4, 6, 5, 11, bronze_hi)
-    # Grieta vertical (esta campana ya ha sonado de mas).
-    for (x, y) in ((8, 4), (8, 5), (7, 6), (8, 7), (7, 8), (7, 9), (8, 10)):
-        px[x, y] = crack
-    # Badajo de hueso.
-    _fill(px, 7, 13, 9, 15, bone)
-    px[7, 14] = (186, 182, 168, 255)
-    # Brillo.
-    px[5, 4] = bronze_hi
-    return img
+    """Campana de vigilia (64x64): bronce agrietado con badajo de hueso.
+
+    Perfil con cupula y falda ensanchada, anilla superior, grieta vertical
+    (esta campana ya ha sonado de mas) y badajo de hueso asomando abajo.
+    """
+    def paint(x, y, img, size):
+        # Perfil: cupula arriba + falda ensanchada con labio inferior.
+        dome = np.sqrt(np.clip(1.0 - ((y + 0.15) / 0.185) ** 2, 0.0, 1.0)) * 0.135
+        skirt = 0.130 + 0.155 * _sstep(-0.15, 0.30, y) ** 1.5
+        prof = np.where(y < -0.15, dome, skirt) + 0.014 * _sstep(0.215, 0.26, y)
+        bell = np.maximum(np.abs(x) - prof, np.maximum(-0.335 - y, y - 0.30))
+        bcov, bluz = _shade(bell, size, bevel=0.050)
+        # Sombreado horizontal: luz en el hombro izquierdo, sombra a la derecha.
+        nx = x / np.maximum(prof, 1e-3)
+        hl = np.clip(0.75 - nx * 0.60, 0.32, 1.30)
+        streak = 0.92 + 0.14 * np.sin(x * 88.0)
+        bcol = np.array((0.560, 0.395, 0.170), np.float32) * (bluz * hl * streak)[..., None]
+        _over(img, np.clip(bcol, 0.0, 1.0), bcov)
+        # Labio inferior mas oscuro y filo con luz propia.
+        _over(img, (0.330, 0.230, 0.100), bcov * _sstep(0.225, 0.265, y) * 0.55)
+        _add(img, (0.55, 0.42, 0.20), bcov * np.exp(-((y - 0.292) ** 2) / 0.00008) * 0.50)
+
+        # Grieta vertical: ya ha sonado de mas.
+        crack = _sd_polyline(x, y, [(0.02, -0.20), (-0.02, -0.05), (0.03, 0.08), (-0.01, 0.22)], 0.008)
+        _over(img, (0.180, 0.120, 0.050), np.clip(0.5 - crack * size, 0.0, 1.0) * bcov * 0.9)
+
+        # Anilla superior.
+        loop = np.abs(_sd_disc(x, y, 0.0, -0.375, 0.048)) - 0.014
+        lcov, lluz = _shade(loop, size, bevel=0.015)
+        _over(img, np.array((0.560, 0.395, 0.170), np.float32) * lluz[..., None], lcov)
+
+        # Badajo de hueso asomando por debajo de la falda.
+        stem = _sd_polyline(x, y, [(0.0, 0.20), (0.018, 0.315)], 0.008)
+        ball = _sd_disc(x, y, 0.020, 0.345, 0.040)
+        clap = np.minimum(stem, ball)
+        ccov, cluz = _shade(clap, size, bevel=0.020)
+        _over(img, np.array((0.870, 0.845, 0.770), np.float32) * cluz[..., None], ccov)
+
+        # Especular en el hombro izquierdo.
+        _add(img, (1.00, 0.88, 0.55),
+             np.exp(-(((x + 0.105) ** 2 + (y + 0.13) ** 2) / 0.0030)) * 0.65 * bcov)
+    return _render_item(paint)
 
 
-def erode(mask):
-    result = mask.copy()
-    result[1:, :] &= mask[:-1, :]
-    result[:-1, :] &= mask[1:, :]
-    result[:, 1:] &= mask[:, :-1]
-    result[:, :-1] &= mask[:, 1:]
-    return result
+# ---------------------------------------------------------------------------
+# Items 64x64: render suave con campos de distancia (SDF) y supermuestreo.
+# Se pinta a ITEM_RES*ITEM_SS (256x256) y se reduce a ITEM_RES, de modo que
+# los bordes salen con antialiasing en vez de «cortados». Luz coherente
+# arriba-izquierda en todos los items.
+# ---------------------------------------------------------------------------
+
+ITEM_RES = 64
+ITEM_SS = 4
+_LIGHT = (-0.62, -0.62)  # direccion de la luz (y crece hacia abajo)
 
 
-def heart_mask(size, scale=1.0, ox=0.0, oy=0.0):
-    yy, xx = np.mgrid[0:size, 0:size]
-    x = ((xx + 0.5) / size) * 2.0 - 1.0
-    y = 1.0 - ((yy + 0.5) / size) * 2.0
-    x = (x - ox) / scale
-    y = (y - oy) / scale
-    f = (x ** 2 + y ** 2 - 1.0) ** 3 - x ** 2 * (y ** 3)
-    return f <= 0.0
+def _coords(size):
+    """Centro de pixel en coordenadas centradas x,y (lienzo de lado 1.0)."""
+    yy, xx = np.mgrid[0:size, 0:size].astype(np.float32)
+    return (xx + 0.5) / size - 0.5, (yy + 0.5) / size - 0.5
+
+
+def _sstep(a, b, t):
+    """Smoothstep estable (acepta escalares o arrays)."""
+    t = np.clip((t - a) / (b - a + 1e-9), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def _canvas(size):
+    """Lienzo RGBA float en premultiplicado (facilita la luz aditiva)."""
+    return np.zeros((size, size, 4), np.float32)
+
+
+def _over(img, rgb, alpha):
+    """Compone rgb (0..1) con alpha [0,1] sobre el lienzo premultiplicado."""
+    a_old = img[..., 3]
+    img[..., :3] = rgb * alpha[..., None] + img[..., :3] * (1.0 - alpha)[..., None]
+    img[..., 3] = alpha + a_old * (1.0 - alpha)
+
+
+def _add(img, rgb, amount):
+    """Suma luz aditiva (halos, filos de almas, especulares)."""
+    img[..., :3] += np.asarray(rgb, np.float32) * np.clip(amount, 0.0, 3.0)[..., None]
+
+
+def _finish(img, size):
+    """Reduce el lienzo (premultiplicado) con supermuestreo y lo vuelve PNG."""
+    ss = img.shape[0] // size
+    small = img.reshape(size, ss, size, ss, 4).mean(axis=(1, 3))
+    a = small[..., 3:4]
+    rgb = np.where(a > 1e-4, small[..., :3] / np.maximum(a, 1e-4), 0.0)
+    out = np.concatenate([np.clip(rgb, 0.0, 1.0), np.clip(a, 0.0, 1.0)], axis=2)
+    return Image.fromarray((out * 255.0 + 0.5).astype(np.uint8), "RGBA")
+
+
+def _render_item(paint):
+    """Ejecuta paint(x, y, img, size) a resolucion alta y reduce a ITEM_RES."""
+    size = ITEM_RES * ITEM_SS
+    x, y = _coords(size)
+    img = _canvas(size)
+    paint(x, y, img, size)
+    return _finish(img, ITEM_RES)
+
+
+# -- primitivas SDF (negativo dentro, positivo fuera) -----------------------
+
+
+def _sd_disc(x, y, cx, cy, r):
+    return np.sqrt((x - cx) ** 2 + (y - cy) ** 2) - r
+
+
+def _sd_box(x, y, cx, cy, hx, hy, rad=0.0):
+    qx = np.abs(x - cx) - (hx - rad)
+    qy = np.abs(y - cy) - (hy - rad)
+    outside = np.sqrt(np.maximum(qx, 0.0) ** 2 + np.maximum(qy, 0.0) ** 2)
+    return outside + np.minimum(np.maximum(qx, qy), 0.0) - rad
+
+
+def _sd_segment(x, y, a, b):
+    px, py = x - a[0], y - a[1]
+    bx, by = b[0] - a[0], b[1] - a[1]
+    h = np.clip((px * bx + py * by) / (bx * bx + by * by + 1e-9), 0.0, 1.0)
+    return np.sqrt((px - bx * h) ** 2 + (py - by * h) ** 2)
+
+
+def _sd_polyline(x, y, pts, width=0.0):
+    d = None
+    for i in range(len(pts) - 1):
+        seg = _sd_segment(x, y, pts[i], pts[i + 1])
+        d = seg if d is None else np.minimum(d, seg)
+    return d - width
+
+
+def _shade(d, size, bevel=0.055):
+    """Cobertura + luz lambertiana (arriba-izq) desde un SDF (dentro < 0)."""
+    cov = np.clip(0.5 - d * size, 0.0, 1.0)
+    gy, gx = np.gradient(d)
+    n = np.sqrt(gx * gx + gy * gy) + 1e-6
+    lam = np.clip(-(gx / n * _LIGHT[0] + gy / n * _LIGHT[1]), 0.0, 1.0)
+    bulge = _sstep(0.0, bevel, -d)
+    rim = 1.0 - _sstep(0.0, bevel * 0.7, -d)
+    return cov, np.clip(0.60 + 0.65 * lam * bulge - 0.30 * rim, 0.15, 1.6)
+
+
+def _heart_field(x, y, size, scale=1.0, oy=0.0):
+    """Distancia aproximada al corazon clasico (negativa dentro)."""
+    xx = x / scale
+    yy = -(y - oy) / scale  # y invertido: los lobulos, arriba
+    f = (xx ** 2 + yy ** 2 - 1.0) ** 3 - xx ** 2 * (yy ** 3)
+    gy, gx = np.gradient(f)
+    return np.clip(f / (np.sqrt(gx * gx + gy * gy) + 1e-6) / size, -0.5, 0.5)
 
 
 def make_corazon():
-    """Corazon agrietado: degradado, contorno, grieta central y brillo."""
-    img = Image.new("RGBA", (16, 16), COL_TRANSPARENT)
-    mask = heart_mask(16, 1.05, 0.0, 0.15)
-    outline = mask & ~erode(mask)
-    px = img.load()
-    h, w = mask.shape
-    for y in range(h):
-        t = y / float(h - 1)
-        fill = (int(176 - 62 * t), int(48 - 24 * t), int(58 - 26 * t), 255)
-        shade = (int(120 - 44 * t), int(30 - 15 * t), int(38 - 18 * t), 255)
-        for x in range(w):
-            if outline[y, x]:
-                px[x, y] = (58, 10, 16, 255)
-            elif mask[y, x]:
-                px[x, y] = shade if x > 9 else fill
-    # Grieta que recorre el corazon
-    for (x, y) in ((8, 3), (7, 4), (8, 5), (7, 6), (8, 7), (7, 8), (8, 9), (7, 10)):
-        if 0 <= y < h and mask[y, x]:
-            px[x, y] = (44, 6, 12, 255)
-    # Brillo
-    for (x, y) in ((4, 3), (5, 3), (4, 4), (5, 4)):
-        if 0 <= y < h and mask[y, x]:
-            px[x, y] = (226, 132, 142, 255)
-    return img
+    """Corazon Silente (64x64): volumen organico con vetas y brillo humedo.
+
+    Campo implicito del corazon + luz arriba-izquierda; contorno oscuro,
+    grano de carne, arterias en la cima y gota de luz en el lobulo.
+    """
+    def paint(x, y, img, size):
+        # Masa principal + dos vasos saliendo por arriba (aorta y vena).
+        d = _heart_field(x, y, size, 0.42, 0.05)
+        aorta = _sd_polyline(x, y, [(-0.14, -0.26), (-0.19, -0.38), (-0.13, -0.47)], 0.045)
+        vena = _sd_polyline(x, y, [(0.09, -0.24), (0.15, -0.36), (0.10, -0.44)], 0.036)
+        d = np.minimum(d, np.minimum(aorta, vena))
+        cov, luz = _shade(d, size, bevel=0.10)
+
+        # Cuerpo: rojo arterial arriba que se apaga hacia abajo.
+        t = np.clip((y + 0.45) * 1.15, 0.0, 1.0)
+        col = (np.array((0.760, 0.220, 0.245), np.float32) -
+               np.array((0.310, 0.130, 0.120), np.float32) * t[..., None])
+        col = col * luz[..., None]
+
+        # Grano de carne fino (ruido por texel final, no por subpixel).
+        rng = np.random.default_rng(303)
+        noise = rng.random((size // 4, size // 4)).astype(np.float32)
+        noise = np.kron(noise, np.ones((4, 4), np.float32))[:size, :size]
+        col *= (0.93 + 0.14 * noise)[..., None]
+        _over(img, col, cov)
+
+        # Vetas oscuras ramificadas dentro de la masa.
+        veins = (([(-0.02, -0.08), (0.09, 0.00), (0.14, 0.12)], 0.013),
+                 ([(-0.02, -0.08), (-0.13, -0.01), (-0.20, 0.09)], 0.013),
+                 ([(0.09, 0.00), (0.12, -0.11)], 0.009),
+                 ([(-0.13, -0.01), (-0.15, 0.11), (-0.09, 0.22)], 0.009),
+                 ([(-0.02, -0.08), (-0.02, 0.07), (0.04, 0.19)], 0.011))
+        vein_d = None
+        for pts, wdt in veins:
+            vd = _sd_polyline(x, y, pts, wdt)
+            vein_d = vd if vein_d is None else np.minimum(vein_d, vd)
+        interior = np.clip(0.5 - d * size, 0.0, 1.0)
+        vein_cov = np.clip(0.5 - vein_d * size, 0.0, 1.0) * interior
+        _over(img, (0.30, 0.05, 0.08), vein_cov * 0.60)
+
+        # Arterias de la cima: aorta viva, vena mas fria.
+        _over(img, (0.46, 0.11, 0.13), np.clip(0.5 - aorta * size, 0.0, 1.0) * 0.45)
+        _over(img, (0.27, 0.13, 0.26), np.clip(0.5 - vena * size, 0.0, 1.0) * 0.50)
+
+        # Brillo humedo arriba-izquierda + punto especular.
+        _add(img, (0.95, 0.55, 0.58),
+             np.exp(-(((x + 0.20) ** 2 + (y + 0.20) ** 2) / 0.014)) * 0.50 * interior)
+        _add(img, (1.00, 0.90, 0.92),
+             np.exp(-(((x + 0.15) ** 2 + (y + 0.25) ** 2) / 0.0016)) * 0.85 * interior)
+
+        # Contorno oscuro definiendo la silueta.
+        _over(img, (0.15, 0.02, 0.04), (1.0 - _sstep(0.0, 0.022, -d)) * 0.55 * interior)
+    return _render_item(paint)
 
 
 def make_amuleto():
-    """Aro de oro con el corazon silente en el centro y cordel."""
-    img = Image.new("RGBA", (16, 16), COL_TRANSPARENT)
-    px = img.load()
-    cord = (126, 100, 64, 255)
-    gold_hi = (255, 232, 146, 255)
-    gold = (233, 187, 66, 255)
-    gold_lo = (154, 112, 30, 255)
-    dark = (26, 19, 10, 255)
-    # Cordel
-    for y in range(0, 3):
-        px[7, y] = cord
-        px[8, y] = cord
-    # Fondo interior del aro
-    cx, cy = 7.5, 8.5
-    for y in range(16):
-        for x in range(16):
-            d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
-            if d < 4.3:
-                px[x, y] = dark
-    # Corazon central
-    small = heart_mask(16, 2.7, 0.0, -0.05)
-    outline = small & ~erode(small)
-    for y in range(16):
-        for x in range(16):
-            if outline[y, x]:
-                px[x, y] = (88, 16, 24, 255)
-            elif small[y, x]:
-                px[x, y] = (176, 48, 58, 255) if y < 8 else (132, 34, 44, 255)
-    # Aro de oro con brillo arriba
-    for y in range(16):
-        for x in range(16):
-            d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
-            if 4.3 <= d <= 5.7:
-                px[x, y] = gold_hi if (y - cy) < -2.0 else (gold if (y - cy) < 2.0 else gold_lo)
-    # Destello
-    px[5, 5] = (255, 255, 255, 255)
-    return img
+    """Amuleto del Latido (64x64): aro de oro facetado con corazon pulsante.
+
+    Terciopelo interior con viñeta, luz derramada por el corazon sobre el
+    terciopelo y cordel de dos hebras trenzado hacia arriba.
+    """
+    def paint(x, y, img, size):
+        cx, cy = 0.0, 0.03
+        dist = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+
+        # Disco interior: terciopelo oscuro con viñeta radial y pelusa fina.
+        inner = _sd_disc(x, y, cx, cy, 0.305)
+        inner_cov = np.clip(0.5 - inner * size, 0.0, 1.0)
+        vig = _sstep(0.31, 0.03, dist)
+        velvet = (np.array((0.150, 0.045, 0.085), np.float32) +
+                  np.array((0.090, 0.030, 0.045), np.float32) * vig[..., None])
+        rng = np.random.default_rng(404)
+        fuzz = rng.random((size // 4, size // 4)).astype(np.float32)
+        fuzz = np.kron(fuzz, np.ones((4, 4), np.float32))[:size, :size]
+        velvet *= (0.88 + 0.20 * fuzz)[..., None]
+        _over(img, velvet, inner_cov)
+
+        # Luz que derrama el corazon sobre el terciopelo.
+        _add(img, (0.55, 0.09, 0.11), np.exp(-(dist ** 2) / 0.050) * 0.60 * inner_cov)
+
+        # Corazon central.
+        heart = _heart_field(x - cx, y - cy - 0.01, size, 0.135, 0.0)
+        hcov, hluz = _shade(heart, size, bevel=0.045)
+        ht = np.clip((y - cy + 0.08) * 5.0, 0.0, 1.0)
+        hcol = (np.array((0.790, 0.210, 0.245), np.float32) -
+                np.array((0.260, 0.100, 0.105), np.float32) * ht[..., None]) * hluz[..., None]
+        _over(img, hcol, hcov)
+        _add(img, (1.00, 0.55, 0.58),
+             np.exp(-(((x + 0.05) ** 2 + (y + 0.02) ** 2) / 0.0016)) * 0.80 * hcov)
+
+        # Cordel de dos hebras trenzado (sale por detras del aro hacia arriba).
+        ycut = y + 0.30
+        twist = np.sin((y + 0.5) * 40.0)
+        s1 = np.maximum(np.abs(x - 0.030 * twist) - 0.020, ycut)
+        s2 = np.maximum(np.abs(x + 0.030 * twist) - 0.020, ycut)
+        cord = np.minimum(s1, s2)
+        ccov, cluz = _shade(cord, size, bevel=0.025)
+        braid = 0.82 + 0.30 * np.abs(np.cos((y + 0.5) * 40.0))
+        _over(img, np.array((0.500, 0.395, 0.235), np.float32) * (cluz * braid)[..., None], ccov)
+
+        # Aro de oro facetado.
+        ring = np.abs(dist - 0.360) - 0.055
+        rcov, rluz = _shade(ring, size, bevel=0.045)
+        ang = np.arctan2(y - cy, x - cx)
+        facet = 0.90 + 0.10 * np.cos(ang * 12.0)
+        gold = np.array((0.930, 0.730, 0.250), np.float32) * (rluz * facet)[..., None]
+        _over(img, gold, rcov)
+        # Especular del aro (arriba-izquierda).
+        _add(img, (1.00, 0.96, 0.78),
+             np.exp(-(((x + 0.24) ** 2 + (y + 0.22) ** 2) / 0.0055)) * 0.55 * rcov)
+    return _render_item(paint)
 
 
 def generate_textures():

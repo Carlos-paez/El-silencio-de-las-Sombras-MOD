@@ -8,7 +8,7 @@
 - Extra dependency: **GeckoLib 4.4.x** (`geckolib-forge-1.20.1`, cloudsmith maven `geckolib3/geckolib`, declared with `fg.deobf` in build.gradle and mandatory in `mods.toml`). El Silente uses `GeoEntityRenderer` + JSON geo model/animations.
 
 ## Commands (run from repo root)
-- **JDK 17 is required for Gradle**: the machine's default `java` has been newer and breaks Gradle 8.1.1 ("Unsupported class file major version"). Prefix with `export JAVA_HOME="C:/Users/cpaez/.jdks/jdk-17.0.13+11"` (Git Bash) before any `gradlew` call.
+- **JDK 17 is required for Gradle**: the machine's default `java` is 26 and breaks Gradle 8.1.1 ("Unsupported class file major version 70"). Prefix every `gradlew` call with `export JAVA_HOME="C:/Users/Usuario/.gradle/jdks/eclipse_adoptium-17-amd64-windows/jdk-17.0.20.1+1"` (Git Bash). This JDK 17 fue auto-provisionado por Gradle; no hay otro JDK 17 en la máquina.
 - Build: `.\gradlew build` → `build/libs/elsilente-<version>.jar` (e.g. `elsilente-1.0.0.jar`).
 - Dev client / server: `.\gradlew runClient` / `.\gradlew runServer`.
 - Data generation: `.\gradlew runData` (outputs to `src/generated/resources`, working dir `run-data`).
@@ -18,6 +18,7 @@
 
 ## Generated assets (not edited by hand)
 - Textures (PNG) and sounds (OGG) are produced by `python scripts/generate_assets.py` (deps: `numpy`, `pillow`, `soundfile`; optional `imageio-ffmpeg`). `--textures-only` skips audio.
+- **Item textures are 64x64**: the 6 item generators (`make_corazon`, `make_amuleto`, `make_simbolo_alba`, `make_guadana`, `make_lampara`, `make_campana_vigilia`) use the SDF render pipeline (`ITEM_RES`/`ITEM_SS`, `_shade`, `_heart_field`, `_sd_*`) — paint at 256x256 and downsample for real antialiasing; don't regress them to 16x16 pixel art. Entity/block textures keep their native sizes.
 - Entity atlas UVs in the script **must match** the models: `client/SombraDebilModel.java`, `client/UmbralModel.java` and `client/ElSilenteGeoModel.java` + `assets/elsilente/geo/models/entity/el_silente.geo.json` (same 64x64 atlas as before the GeckoLib migration); if you change the UV layout, update the atlas coords in the script too (see `EYE_CORES`).
 - GeckoLib assets: `assets/elsilente/geo/` (`.geo.json` models) and `assets/elsilente/animations/`; every bone referenced in animations must exist in the geo model.
 - Outputs are committed under `src/main/resources/assets/elsilente/`.
@@ -39,3 +40,4 @@
 - Prefer unicode escapes (e.g. `\u00c9l`) over raw accented literals in `.java` to avoid encoding issues.
 - `build/`, `run/`, `.gradle/` are gitignored dev/output and must not be edited; `run/` holds a dev world save and logs used for debugging.
 - `changelog.txt` is the upstream Forge changelog, not this mod's history.
+- **GeckoLib + `runClient` (importante)**: GeckoLib 4.4.9 incluye un mixin (`TextureManagerMixin`) cuyo refmap traduce `getTexture`→SRG `m_118506_`. En el entorno dev (official/Mojmap) ese método ya se llama `getTexture`, así que aplicar el refmap crashea en "Initializing game" (issue bernie-g/geckolib#746). El fix —ya aplicado en `build.gradle`— es `property 'mixin.env.disableRefMap', 'true'` en el run config `client`. **No lo quites**: solo afecta al run dev; el jar de producción sigue usando el refmap con normalidad.

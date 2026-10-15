@@ -84,6 +84,15 @@ minecraft {
         client {
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             property 'forge.enabledGameTestNamespaces', mod_id
+
+            // GeckoLib (dep) trae UN unico mixin (TextureManagerMixin) cuyo refmap traduce el
+            // nombre dev `getTexture` al SRG `m_118506_` (para produccion). En el entorno dev
+            // (official/Mojmap) el metodo ya se llama `getTexture`, asi que aplicar el refmap
+            // busca `m_118506_` y crashea en "Initializing game" (issue conocido GeckoLib+FG,
+            // bernie-g/geckolib#746). Desactivar el refmap en el run dev hace que Mixin use el
+            // nombre literal de la anotacion, que si existe aqui. Solo afecta al run dev; el jar
+            // de produccion sigue usando el refmap con normalidad.
+            property 'mixin.env.disableRefMap', 'true'
         }
 
         server {

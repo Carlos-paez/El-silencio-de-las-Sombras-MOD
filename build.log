@@ -1,22 +1,10 @@
-WARNING: A restricted method in java.lang.System has been called
-WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/C:/Users/Usuario/.gradle/wrapper/dists/gradle-8.1.1-bin/9wiye5v2saajue4irfo8ybqfp/gradle-8.1.1/lib/native-platform-0.22-milestone-24.jar)
-WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
-WARNING: Restricted methods will be blocked in a future release unless native access is enabled
-
 To honour the JVM settings for this build a single-use Daemon process will be forked. See https://docs.gradle.org/8.1.1/userguide/gradle_daemon.html#sec:disabling_the_daemon.
 Daemon will be stopped at the end of the build 
 
 > Configure project :
-Java: 26.0.1, JVM: 26.0.1+8-34 (Oracle Corporation), Arch: amd64
+Java: 17.0.20.1, JVM: 17.0.20.1+1 (Eclipse Adoptium), Arch: amd64
 
-> Task :compileJava
-D:\DEV\El-silencio-de-las-Sombras-MOD\src\main\java\com\elsilente\event\RitualHandler.java:72: warning: [removal] setCanceled(boolean) in ProjectileImpactEvent has been deprecated and marked for removal
-        event.setCanceled(true);
-             ^
-Note: Some input files use or override a deprecated API.
-Note: Recompile with -Xlint:deprecation for details.
-1 warning
-
+> Task :compileJava UP-TO-DATE
 > Task :processResources
 > Task :classes
 > Task :jar
@@ -34,5 +22,5 @@ Note: Recompile with -Xlint:deprecation for details.
 > Task :check UP-TO-DATE
 > Task :build
 
-BUILD SUCCESSFUL in 38s
-7 actionable tasks: 5 executed, 2 up-to-date
+BUILD SUCCESSFUL in 33s
+7 actionable tasks: 4 executed, 3 up-to-date

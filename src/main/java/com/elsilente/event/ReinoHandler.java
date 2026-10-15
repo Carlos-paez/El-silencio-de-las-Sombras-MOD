@@ -17,6 +17,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.phys.Vec3;
@@ -136,10 +137,7 @@ public final class ReinoHandler {
         player.getPersistentData().putLongArray(TAG_RETURN_POS, new long[]{
                 player.blockPosition().getX(), player.blockPosition().getY(), player.blockPosition().getZ()});
 
-        int x = player.blockPosition().getX();
-        int z = player.blockPosition().getZ();
-        int y = reino.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
-        BlockPos arrival = new BlockPos(x, y, z);
+        BlockPos arrival = safeArrival(reino, player.blockPosition().getX(), player.blockPosition().getZ());
 
         teleport(player, reino, arrival);
         placeReturnPortal(reino, arrival);
@@ -159,6 +157,39 @@ public final class ReinoHandler {
         BlockPos dest = resolveReturnPos(player, back);
         teleport(player, back, dest);
         ElSilenteMod.LOGGER.info("[El Silente] {} vuelve del reino de sombras en {}", player.getScoreboardName(), dest);
+    }
+
+    /**
+     * Posicion segura de llegada al reino.
+     *
+     * El reino es una dimension nueva: al cruzar por primera vez sus chunks
+     * ainda no existen. Si teletransportamos al jugador usando solo el
+     * heightmap sin garantizar terreno, cae al vacio (no hay chunk cargado) y
+     * muere. Por eso:
+     *   1. Pre-generamos los chunks alrededor del punto de llegada.
+     *   2. Recalculamos el Y sobre terreno ya generado.
+     *   3. Si aun asi no hay suelo solido debajo, coloca una plataforma de
+     *      obsidiana para que nunca haya vacio bajo los pies.
+     */
+    private static BlockPos safeArrival(ServerLevel level, int x, int z) {
+        // Fuerza la generacion de los 9 chunks (3x3) alrededor del destino.
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                level.getChunk((x >> 4) + dx, (z >> 4) + dz);
+            }
+        }
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+        BlockPos arrival = new BlockPos(x, y, z);
+        // Sin suelo solido debajo -> plataforma de obsidiana (nunca vacio).
+        if (level.getBlockState(arrival.below()).getCollisionShape(level, arrival.below()).isEmpty()) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    BlockPos floor = arrival.below().offset(dx, 0, dz);
+                    level.setBlock(floor, Blocks.OBSIDIAN.defaultBlockState(), 3);
+                }
+            }
+        }
+        return arrival;
     }
 
     /** Coloca una Grieta de vuelta (2 bloques) al lado del punto de llegada. */
@@ -220,9 +251,14 @@ public final class ReinoHandler {
             public boolean playTeleportSound(ServerPlayer p, ServerLevel currentLevel, ServerLevel destLevel) {
                 return false;
             }
-        };
-        player.changeDimension(dest, teleporter);
-        dest.sendParticles(ParticleTypes.SOUL, destPos.getX() + 0.5D, destPos.getY() + 0.5D,
-                destPos.getZ() + 0.5D, 16, 0.3D, 0.5D, 0.3D, 0.02D);
+        };        // changeDimension puede devolver una instancia NUEVA del jugador; usamos
+        // la devuelta para reiniciar la caida y el movimiento residual, evitando
+        // danio de caida/vacio al entrar al reino.
+        Entity teleported = player.changeDimension(dest, teleporter);
+        if (teleported != null) {
+            teleported.fallDistance = 0.0F;
+            teleported.setDeltaMovement(Vec3.ZERO);
+        }
+        dest.sendParticles(ParticleTypes.SOUL, destPos.getX() + 0.5D, destPos.getY() + 0.5D, destPos.getZ() + 0.5D, 16, 0.3D, 0.5D, 0.3D, 0.02D);
     }
 }
